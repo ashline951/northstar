@@ -1,4 +1,5 @@
 import { sql } from "./db";
+import { ROSTER_IMPORT_SQL } from "./roster-import";
 
 /**
  * Schema migrations, applied from the app rather than by hand in the Neon
@@ -73,6 +74,10 @@ export const MIGRATIONS: Migration[] = [
          created_at timestamptz not null default now()
        )`,
     ],
+  },
+  {
+    name: "005_roster_import",
+    statements: [ROSTER_IMPORT_SQL],
   },
 ];
 
