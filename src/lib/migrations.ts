@@ -1,6 +1,7 @@
 import { sql } from "./db";
 import { ROSTER_IMPORT_SQL } from "./roster-import";
 import { CORE_TEAM_GRANT_SQL, PMO_IMPORT_SQL } from "./pmo-import";
+import { ASSISTANT_TEAM_NOTES_SQL } from "./assistant-notes-seed";
 
 /**
  * Schema migrations, applied from the app rather than by hand in the Neon
@@ -83,6 +84,10 @@ export const MIGRATIONS: Migration[] = [
   {
     name: "006_pmo_and_core_team",
     statements: [PMO_IMPORT_SQL, CORE_TEAM_GRANT_SQL],
+  },
+  {
+    name: "007_assistant_team_notes",
+    statements: [ASSISTANT_TEAM_NOTES_SQL],
   },
 ];
 
