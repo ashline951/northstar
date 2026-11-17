@@ -27,5 +27,19 @@ export default {
     }),
   ],
   session: { strategy: "jwt" },
-  pages: { signOut: "/signed-out" },
+  pages: { signIn: "/signin", signOut: "/signed-out" },
+  callbacks: {
+    /**
+     * THE ROUTE GUARD. Without this, exporting `auth` as middleware only
+     * attaches session info to the request and blocks nothing - every page,
+     * including /admin, answers 200 to anonymous callers. Returning false
+     * sends them to pages.signIn.
+     *
+     * Lives here rather than in auth.ts because middleware is built from this
+     * edge-safe config.
+     */
+    authorized({ auth }) {
+      return Boolean(auth?.user);
+    },
+  },
 } satisfies NextAuthConfig;
