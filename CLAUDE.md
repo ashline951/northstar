@@ -21,7 +21,7 @@ Claude Code reads this at the start of every session.
 - Tailwind CSS v4, ESLint
 - `src/` directory, import alias `@/*`
 - Package manager: **npm** (do not mix in pnpm/yarn)
-- Hosting: Vercel, custom domain **northstar.lluh.app**
+- Hosting: Vercel, team **LLUH POC**, custom domain **northstar.lluh.app**
 - Source control: GitHub
 - Auth: Auth.js v5 (`next-auth@beta`) + Microsoft Entra ID, single tenant, LLUH tenant
 - Database: none (deliberate - see Architecture)
@@ -51,7 +51,7 @@ locally — a cloud session cannot do them.
 
 1. `/status` in Claude Code — confirm the LLUH Claude account. If not: `/logout` then `/login`.
    - Optional isolation: `CLAUDE_CONFIG_DIR=~/.claude-lluh claude`
-2. `vercel whoami` and `vercel teams ls` — expect Ryan's personal scope for now.
+2. `vercel whoami` and `vercel teams ls` — the active scope must be **LLUH POC**.
 3. `git config user.email` and `git remote -v` — expect Ryan's personal GitHub for now.
 
 If the **Claude** account is personal rather than LLUH, stop and tell Ryan.
@@ -70,7 +70,8 @@ If the **Claude** account is personal rather than LLUH, stop and tell Ryan.
 ### 5.3 Vercel
 - [ ] `vercel login` (browser sign-in — confirm the correct account)
 - [ ] `vercel whoami` / `vercel teams ls` — confirm scope
-- [ ] `vercel link` in the project root
+- [ ] `vercel link --scope "LLUH POC"` in the project root — **must land in the LLUH POC team**,
+      not a personal scope. Check with `vercel teams ls` first and confirm with `vercel project ls`.
 - [ ] Add domain `northstar.lluh.app` (Project → Settings → Domains); add the CNAME it shows
       at whoever hosts `lluh.app` DNS. TLS is provisioned automatically.
 - [ ] `vercel env pull .env.local`
@@ -165,7 +166,8 @@ claim is on. Client secret expires ~2027-05.
 | Date | Decision | Why |
 |---|---|---|
 | 2026-11-17 | Build POC on Vercel + GitHub; Claude Code under LLUH account | Work project |
-| 2026-11-17 | Use Ryan's **personal** Vercel and GitHub for the POC phase | Speed to a working demo. Ryan confirms CIO backing for this approach |
+| 2026-11-17 | Deploy into the **LLUH POC** Vercel team, not a personal scope | Work-owned hosting; supersedes the earlier personal-Vercel decision |
+| 2026-11-17 | GitHub remains Ryan's personal account for now | Ryan confirms CIO backing |
 | 2026-11-17 | Next.js 15 App Router + TypeScript + Tailwind, npm | Default Vercel path; least friction to a deployable demo |
 | 2026-11-17 | Entra ID sign-in via Auth.js v5; `User.Read` scope dropped | Keeps the app registration to the three standard OIDC scopes |
 | 2026-11-17 | Pin to `northstar.lluh.app` rather than per-deploy preview URLs | Entra redirect URIs require exact matches; one stable URI |
