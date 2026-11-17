@@ -133,7 +133,7 @@ Nothing beyond the default Next.js scaffold yet. Fill in as it develops:
 | Date | Decision | Why |
 |---|---|---|
 | 2026-11-17 | Build POC on Vercel + GitHub; Claude Code under LLUH account | Work project |
-| 2026-11-17 | Use Ryan's **personal** Vercel and GitHub for the POC phase | Speed to a working demo; revisit before any real data or wider rollout |
+| 2026-11-17 | Use Ryan's **personal** Vercel and GitHub for the POC phase | Speed to a working demo. Ryan confirms CIO backing for this approach |
 | 2026-11-17 | Next.js 15 App Router + TypeScript + Tailwind, npm | Default Vercel path; least friction to a deployable demo |
 | 2026-11-17 | Entra ID sign-in via Auth.js v5; `User.Read` scope dropped | Keeps the app registration to the three standard OIDC scopes |
 | 2026-11-17 | Pin to `northstar.lluh.app` rather than per-deploy preview URLs | Entra redirect URIs require exact matches; one stable URI |
@@ -146,5 +146,3 @@ Nothing beyond the default Next.js scaffold yet. Fill in as it develops:
 - [ ] Synthetic data sufficient? (Real LLUH data requires approval **and** moving off personal infrastructure.)
 - [ ] Which Entra tenant — production LLUH or a dev tenant? (Code is identical; three env vars differ.)
 - [ ] Who controls DNS for `lluh.app`, and can they add the CNAME?
-- [ ] `lluh.app` is LLUH-branded but will serve from a **personal** Vercel account during the POC.
-      Confirm that is acceptable, or move the Vercel project to a work-owned team before DNS cutover.

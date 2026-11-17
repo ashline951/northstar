@@ -99,12 +99,7 @@ It will not be committed to the repository.
 
 ---
 
-## Context worth knowing
-
-This POC is currently hosted on a **personal Vercel account** while it is being
-built, using **synthetic data only** — no PHI, no production system access, no
-real patient or employee records. If that changes, it moves to work-owned
-infrastructure first.
+## One option, if you prefer
 
 If you would prefer this registration live in a non-production or dev tenant
 rather than the production LLUH tenant, that works equally well — the app takes
