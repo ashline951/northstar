@@ -1,6 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { auth, signOut } from "@/auth";
+import { hasSeenWelcome } from "@/lib/users";
 import UserMenu from "./UserMenu";
 import WelcomeGate from "./WelcomeGate";
 
@@ -11,6 +12,7 @@ export default async function AppShell({
 }) {
   const session = await auth();
   const user = session?.user;
+  const seenWelcome = user ? await hasSeenWelcome(user.email) : true;
 
   async function signOutAction() {
     "use server";
@@ -44,6 +46,7 @@ export default async function AppShell({
               email={user.email}
               image={user.image}
               jobTitle={user.jobTitle}
+              role={user.role}
               signOutAction={signOutAction}
             />
           )}
@@ -53,7 +56,7 @@ export default async function AppShell({
       <main className="flex-1">{children}</main>
 
       {user && (
-        <WelcomeGate email={user.email} firstName={user.givenName ?? null} />
+        <WelcomeGate firstName={user.givenName ?? null} seen={seenWelcome} />
       )}
     </div>
   );

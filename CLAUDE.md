@@ -26,7 +26,7 @@ Claude Code reads this at the start of every session.
   - Interim URL: **https://northstar-liart-five.vercel.app**
 - Source control: GitHub
 - Auth: Auth.js v5 (`next-auth@beta`) + Microsoft Entra ID, single tenant, LLUH tenant
-- Database: none (deliberate - see Architecture)
+- Database: **Neon Postgres** via the Vercel integration (`DATABASE_URL`); schema in `db/`
 - Brand: token set in `src/app/globals.css`, assets in `public/brand`
 - Email: none yet
 - Other integrations: none yet
@@ -96,8 +96,7 @@ Record base URL, auth method, and env var **names** below. Never record secret v
 |---|---|---|---|
 | `AUTH_SECRET` | Auth.js session/JWT signing | `.env.local` + Vercel | `npx auth secret` |
 | `AUTH_URL` | Public origin Auth.js builds callback URLs from | Vercel | **Must match a registered Entra redirect URI**, or sign-in fails with redirect_uri mismatch |
-| `NORTHSTAR_ALLOWED_USERS` | Comma-separated emails permitted to sign in | Vercel | **Access control.** Empty = nobody gets in |
-| `NORTHSTAR_PROJECT_MANAGERS` | Subset with the Project Manager role; implicitly allowed | Vercel | Keeps staff addresses out of git |
+| `DATABASE_URL` | Neon Postgres | Vercel (set by the integration) | Access control and roles live here, not in env vars |
 | `NEXT_PUBLIC_WELCOME_VIDEO_URL` | Welcome video source | `.env.local` + Vercel | Blank is handled gracefully |
 | `AUTH_MICROSOFT_ENTRA_ID_ID` | Entra Application (client) ID | `.env.local` + Vercel | Not secret |
 | `AUTH_MICROSOFT_ENTRA_ID_TENANT_ID` | Entra Directory (tenant) ID | `.env.local` + Vercel | Not secret |
@@ -141,12 +140,19 @@ anyone in the tenant can authenticate. Delegated Graph scopes:
 `openid profile email User.Read User.ReadBasic.All`. Optional `email` claim is on. Client secret
 expires ~2027-05.
 
-**Authorization is Northstar's job, not Entra's.** The `signIn` callback in `src/auth.ts` checks the
-email against `NORTHSTAR_ALLOWED_USERS` + `NORTHSTAR_PROJECT_MANAGERS` and sends anyone else to
-`/not-authorized`. This is a deliberate trade Ryan chose: Entra assignment is enforced by Microsoft
-before a token is issued, whereas this is enforced by our code afterwards. **Do not weaken the
-`signIn` callback** - it is the only thing standing between a tenant-wide identity and the app.
-It fails closed: unset variables admit nobody.
+**Authorization is Northstar's job, not Entra's.** The `signIn` callback in `src/auth.ts` looks the
+email up in `northstar_users` and sends anyone without an active row to `/not-authorized`. This is a
+deliberate trade Ryan chose: Entra assignment is enforced by Microsoft before a token is issued,
+whereas this is enforced by our code afterwards. **Do not weaken the `signIn` callback** - it is the
+only thing standing between a tenant-wide identity and the app. It fails closed: an unreachable
+database denies access rather than granting it.
+
+**Auth config is split on purpose.** `src/auth.config.ts` is edge-safe and is what `middleware.ts`
+builds from, so the Neon driver never runs in middleware. `src/auth.ts` adds the callbacks that need
+the database. Do not collapse them back together.
+
+**Server actions re-check authorization.** `src/app/admin/actions.ts` calls `requireProjectManager()`
+in every action. A server action is a public endpoint; hiding the admin link is not access control.
 
 **Routes**
 | Route | Notes |
@@ -156,6 +162,7 @@ It fails closed: unset variables admit nobody.
 | `/preferences` | Theme control |
 | `/signed-out` | Public. Must NOT auto-redirect, or SSO re-signs them in |
 | `/not-authorized` | Public. Authenticated but not on the allow list |
+| `/admin` | Manage who can sign in. Project managers only |
 | `/api/auth/*` | Auth.js handlers |
 
 **Key decisions baked into the code**
@@ -164,17 +171,19 @@ It fails closed: unset variables admit nobody.
   sign-in and carried in the session cookie. Photo size is kept small because Auth.js has to chunk
   the cookie past ~4KB.
 - No photo in Graph is normal, not an error - `Avatar` falls back to initials.
-- Welcome video state lives in `localStorage` keyed by email. Per browser, by design: it replays on
-  a new device. Per-person would need a database.
+- Welcome video state is `northstar_users.welcome_seen_at` - per person, across devices.
 - Video playback starts from a click. Browsers block audio without a user gesture; this is not
   something that can be coded around.
 - Sign-out is app-only. Ending the Entra session would sign people out of Outlook and Teams.
 - `NEXT_PUBLIC_WELCOME_VIDEO_URL` blank is a supported state - the welcome screen shows a message
   and still offers Enter Northstar.
 
+**Database** - Neon Postgres, one table, `northstar_users`. Migrations in `db/`, applied by hand in
+the Neon SQL editor (no migration runner; there is one table). `deactivateUser` is a soft delete so
+there is a record of who once had access.
+
 **Not built, deliberately**
 - Any actual project management
-- Self-service "add anyone" - needs a database
 - Entra security groups - roles are in-app only
 
 ## 9. Decisions log
@@ -188,6 +197,7 @@ It fails closed: unset variables admit nobody.
 | 2026-11-17 | Entra ID sign-in via Auth.js v5; `User.Read` scope dropped | Keeps the app registration to the three standard OIDC scopes |
 | 2026-11-17 | Pin to `northstar.lluh.app` rather than per-deploy preview URLs | Entra redirect URIs require exact matches; one stable URI |
 | 2026-11-17 | Access control moved from Entra assignment to an in-app allow list | Ryan wants the tenant able to authenticate, with Northstar deciding who gets in |
+| 2026-11-17 | Roster moved from env vars to Neon Postgres, with an in-app admin page | Env vars needed a redeploy per change and only Ryan could edit them |
 | 2026-11-17 | Interim testing on `northstar-liart-five.vercel.app` while DNS is pending | Decouples sign-in testing from the Cloudflare change |
 | 2026-11-17 | No local development; deploy from GitHub to Vercel only | Ryan's choice. Means the deployed app is the first test, and preview deploys cannot authenticate |
 
@@ -195,9 +205,7 @@ It fails closed: unset variables admit nobody.
 
 - [ ] Demo date.
 - [ ] Welcome video file (Gemini, ~60s) — then set `NEXT_PUBLIC_WELCOME_VIDEO_URL`.
-- [ ] Project Manager roster — emails for `NORTHSTAR_PROJECT_MANAGERS`.
 - [ ] Ask Identity to turn **Assignment required OFF**; Northstar now gates access itself.
-- [ ] The allow list of emails for `NORTHSTAR_ALLOWED_USERS`.
 - [ ] Which systems must it connect to (ServiceNow, Clear Skye), and are sandboxes available?
 - [ ] Synthetic data sufficient? (Real LLUH data requires approval **and** moving off personal infrastructure.)
 - [ ] Who controls DNS for `lluh.app`, and can they add the CNAME?

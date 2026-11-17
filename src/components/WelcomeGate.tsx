@@ -1,28 +1,23 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { hasSeenWelcome, markWelcomeSeen } from "@/lib/welcome";
+import { recordWelcomeSeen } from "@/app/actions";
 
 const VIDEO_URL = process.env.NEXT_PUBLIC_WELCOME_VIDEO_URL ?? "";
 
 export default function WelcomeGate({
-  email,
   firstName,
+  seen,
 }: {
-  email?: string | null;
   firstName?: string | null;
+  /** Whether this person has already watched it, read from the database on
+   *  the server. Per person, not per browser - it follows them to any device. */
+  seen: boolean;
 }) {
-  // Start hidden and decide on the client: localStorage is not available
-  // during server rendering, and we must not flash the overlay at people
-  // who have already seen it.
-  const [show, setShow] = useState(false);
+  const [show, setShow] = useState(!seen);
   const [started, setStarted] = useState(false);
   const [finished, setFinished] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
-
-  useEffect(() => {
-    if (!hasSeenWelcome(email)) setShow(true);
-  }, [email]);
 
   // "Watch the Northstar video" in the user menu.
   useEffect(() => {
@@ -36,9 +31,11 @@ export default function WelcomeGate({
   }, []);
 
   const enter = useCallback(() => {
-    markWelcomeSeen(email);
     setShow(false);
-  }, [email]);
+    // Fire and forget: if the write fails they simply see it once more,
+    // which is better than blocking entry to the app on a database round trip.
+    void recordWelcomeSeen();
+  }, []);
 
   // Lock background scroll while the overlay is up.
   useEffect(() => {

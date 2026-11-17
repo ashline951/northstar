@@ -10,12 +10,14 @@ export default function UserMenu({
   email,
   image,
   jobTitle,
+  role,
   signOutAction,
 }: {
   name?: string | null;
   email?: string | null;
   image?: string | null;
   jobTitle?: string | null;
+  role?: string | null;
   signOutAction: () => Promise<void>;
 }) {
   const [open, setOpen] = useState(false);
@@ -93,6 +95,11 @@ export default function UserMenu({
           <Link href="/preferences" role="menuitem" className={item} onClick={() => setOpen(false)}>
             Preferences
           </Link>
+          {role === "Project Manager" && (
+            <Link href="/admin" role="menuitem" className={item} onClick={() => setOpen(false)}>
+              Manage access
+            </Link>
+          )}
           <button
             role="menuitem"
             className={item}
