@@ -90,7 +90,7 @@ Record base URL, auth method, and env var **names** below. Never record secret v
 | `AUTH_MICROSOFT_ENTRA_ID_TENANT_ID` | Entra Directory (tenant) ID | `.env.local` + Vercel | Not secret |
 | `AUTH_MICROSOFT_ENTRA_ID_SECRET` | Entra client secret | `.env.local` + Vercel | **Secret.** Rotate at POC end |
 
-See `.env.example`. Entra registration request for the Identity team: `docs/entra-setup.md`.
+See `.env.example`. Entra registration request for the Identity team: `docs/northstar-entra-setup.md`.
 
 Add with `vercel env add <NAME> <environment>`.
 
@@ -115,6 +115,10 @@ No test runner is configured yet.
 - Do not delete projects, databases, domains, or env vars without asking.
 - Prefer simple, readable code. This is a POC: favor speed to a working demo, but flag shortcuts that would need hardening before production.
 - Keep the Decisions log and Open questions current.
+- **Name every document and deliverable with `northstar` in the filename** — e.g.
+  `northstar-entra-setup.md`, `northstar-demo-script.md`. These get forwarded to people
+  outside the project, where a bare `entra-setup.md` has no context. Exception: `CLAUDE.md`,
+  which Claude Code requires by that exact name.
 - When blocked on a credential, approval, or access, say so plainly and list exactly what Ryan needs to do.
 
 ## 8. Architecture notes
