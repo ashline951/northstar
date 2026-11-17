@@ -6,10 +6,12 @@ Claude Code reads this at the start of every session.
 
 ## 1. Project overview
 
-- **POC name:** **Northstar** (package name `northstar`, Vercel project `northstar`)
-- **Goal / problem it solves:** NOT YET DEFINED — see Open Questions. Do not write feature code until this is answered.
-- **Audience / who will demo it:** NOT YET DEFINED
-- **Success criteria:** NOT YET DEFINED
+- **POC name:** **Northstar** — project management system (package and Vercel project `northstar`)
+- **Goal / problem it solves:** LLUH project management system. Phase 1 is the front door only:
+  SSO, a welcome video, the app shell and profile/preferences. No PM features yet.
+- **Audience:** core team, then invited members
+- **Success criteria (phase 1):** a core team member opens northstar.lluh.app, is signed in by
+  SSO, watches the welcome video once, and lands in the shell with their own name and photo
 - **Owner:** Ryan (Loma Linda University Health, IS leadership)
 - **Deadline / demo date:** NOT YET DEFINED
 
@@ -21,8 +23,9 @@ Claude Code reads this at the start of every session.
 - Package manager: **npm** (do not mix in pnpm/yarn)
 - Hosting: Vercel, custom domain **northstar.lluh.app**
 - Source control: GitHub
-- Auth: Auth.js v5 (`next-auth@beta`) + Microsoft Entra ID, single tenant
-- Database: none yet
+- Auth: Auth.js v5 (`next-auth@beta`) + Microsoft Entra ID, single tenant, LLUH tenant
+- Database: none (deliberate - see Architecture)
+- Brand: token set in `src/app/globals.css`, assets in `public/brand`
 - Email: none yet
 - Other integrations: none yet
 
@@ -86,6 +89,8 @@ Record base URL, auth method, and env var **names** below. Never record secret v
 | Variable | Purpose | Where it is set | Notes |
 |---|---|---|---|
 | `AUTH_SECRET` | Auth.js session/JWT signing | `.env.local` + Vercel | `npx auth secret` |
+| `NORTHSTAR_PROJECT_MANAGERS` | Comma-separated emails with the Project Manager role | `.env.local` + Vercel | Keeps staff addresses out of git |
+| `NEXT_PUBLIC_WELCOME_VIDEO_URL` | Welcome video source | `.env.local` + Vercel | Blank is handled gracefully |
 | `AUTH_MICROSOFT_ENTRA_ID_ID` | Entra Application (client) ID | `.env.local` + Vercel | Not secret |
 | `AUTH_MICROSOFT_ENTRA_ID_TENANT_ID` | Entra Directory (tenant) ID | `.env.local` + Vercel | Not secret |
 | `AUTH_MICROSOFT_ENTRA_ID_SECRET` | Entra client secret | `.env.local` + Vercel | **Secret.** Rotate at POC end |
@@ -123,10 +128,37 @@ No test runner is configured yet.
 
 ## 8. Architecture notes
 
-Nothing beyond the default Next.js scaffold yet. Fill in as it develops:
-- Key routes / pages / API endpoints
-- Data model
-- External API contracts
+**Entra app registration** `Northstar POC`, LLUH tenant, single tenant, assignment required.
+Delegated Graph scopes: `openid profile email User.Read User.ReadBasic.All`. Optional `email`
+claim is on. Client secret expires ~2027-05.
+
+**Routes**
+| Route | Notes |
+|---|---|
+| `/` | Welcome + emblem + motto. Auth required |
+| `/profile` | Entra/Graph details, read-only |
+| `/preferences` | Theme control |
+| `/signed-out` | Public. Must NOT auto-redirect, or SSO re-signs them in |
+| `/api/auth/*` | Auth.js handlers |
+
+**Key decisions baked into the code**
+- Middleware protects everything except `/api/auth`, `/signed-out` and static brand assets.
+- Graph profile (name, title, department, 64px photo) is fetched once in the `jwt` callback at
+  sign-in and carried in the session cookie. Photo size is kept small because Auth.js has to chunk
+  the cookie past ~4KB.
+- No photo in Graph is normal, not an error - `Avatar` falls back to initials.
+- Welcome video state lives in `localStorage` keyed by email. Per browser, by design: it replays on
+  a new device. Per-person would need a database.
+- Video playback starts from a click. Browsers block audio without a user gesture; this is not
+  something that can be coded around.
+- Sign-out is app-only. Ending the Entra session would sign people out of Outlook and Teams.
+- `NEXT_PUBLIC_WELCOME_VIDEO_URL` blank is a supported state - the welcome screen shows a message
+  and still offers Enter Northstar.
+
+**Not built, deliberately**
+- Any actual project management
+- Self-service "add anyone" - needs a database
+- Entra security groups - roles are in-app only
 
 ## 9. Decisions log
 
@@ -140,9 +172,10 @@ Nothing beyond the default Next.js scaffold yet. Fill in as it develops:
 
 ## 10. Open questions for Ryan
 
-- [ ] **What is the POC?** Problem, audience, and what "working" looks like on demo day. Blocking — no feature code until answered.
 - [ ] Demo date.
-- [ ] Which systems must it connect to, and are sandbox instances available?
+- [ ] Welcome video file (Gemini, ~60s) — then set `NEXT_PUBLIC_WELCOME_VIDEO_URL`.
+- [ ] Project Manager roster — emails for `NORTHSTAR_PROJECT_MANAGERS`.
+- [ ] Assign the core team in Entra. **Assignment required is ON** — unassigned users cannot sign in.
+- [ ] Which systems must it connect to (ServiceNow, Clear Skye), and are sandboxes available?
 - [ ] Synthetic data sufficient? (Real LLUH data requires approval **and** moving off personal infrastructure.)
-- [ ] Which Entra tenant — production LLUH or a dev tenant? (Code is identical; three env vars differ.)
 - [ ] Who controls DNS for `lluh.app`, and can they add the CNAME?
