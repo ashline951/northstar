@@ -10,6 +10,7 @@ import {
   getActiveUser,
   setRole,
 } from "@/lib/users";
+import { addNote, deleteNote } from "@/lib/assistant";
 
 /**
  * Every action re-checks the caller server-side. A server action is a public
@@ -64,5 +65,21 @@ export async function setRoleAction(formData: FormData) {
   if (email.toLowerCase() === actor.toLowerCase()) return;
 
   await setRole(email, role);
+  revalidatePath("/admin");
+}
+
+export async function addNoteAction(formData: FormData) {
+  const actor = await requireProjectManager();
+  const body = String(formData.get("body") ?? "").trim();
+  if (!body) return;
+  await addNote(body.slice(0, 500), actor);
+  revalidatePath("/admin");
+}
+
+export async function deleteNoteAction(formData: FormData) {
+  await requireProjectManager();
+  const id = Number(formData.get("id"));
+  if (!Number.isInteger(id)) return;
+  await deleteNote(id);
   revalidatePath("/admin");
 }

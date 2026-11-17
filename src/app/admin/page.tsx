@@ -6,7 +6,14 @@ import {
   getActiveUser,
   listUsers,
 } from "@/lib/users";
-import { addUserAction, deactivateUserAction, setRoleAction } from "./actions";
+import { listNotes } from "@/lib/assistant";
+import {
+  addNoteAction,
+  addUserAction,
+  deactivateUserAction,
+  deleteNoteAction,
+  setRoleAction,
+} from "./actions";
 
 export default async function AdminPage() {
   const session = await auth();
@@ -28,6 +35,7 @@ export default async function AdminPage() {
   }
 
   const users = await listUsers();
+  const notes = await listNotes();
   const input =
     "w-full rounded-lg border border-[var(--ns-border-subtle)] bg-[var(--ns-surface-card)] px-3 py-2 text-sm text-[var(--ns-text-primary)]";
 
@@ -143,6 +151,65 @@ export default async function AdminPage() {
         <p className="mt-4 text-xs text-[var(--ns-text-secondary)]">
           Removing someone keeps their record, so there is a history of who was
           granted access. Changes take effect the next time they sign in.
+        </p>
+
+        <h2 className="ns-display mt-14 text-2xl text-[var(--ns-text-primary)]">
+          What the assistant knows
+        </h2>
+        <p className="mt-2 text-sm text-[var(--ns-text-secondary)]">
+          Facts, in-jokes and tone for the Northstar assistant. It works these in
+          where they fit. Changes apply to the next message — no redeploy.
+        </p>
+
+        <form
+          action={addNoteAction}
+          className="mt-6 flex flex-col gap-3 rounded-xl border border-[var(--ns-border-subtle)] bg-[var(--ns-surface-card)] p-5 sm:flex-row"
+        >
+          <input
+            name="body"
+            required
+            maxLength={500}
+            placeholder="e.g. You are not very busy yet, because Ryan, Takira and Dar are slow pokes."
+            className={`${input} flex-1`}
+          />
+          <button
+            type="submit"
+            className="rounded-lg bg-[var(--ns-gold-glow)] px-5 py-2 text-sm font-semibold text-[var(--ns-bg-midnight)] hover:bg-[var(--ns-gold-light)]"
+          >
+            Add
+          </button>
+        </form>
+
+        <ul className="mt-4 space-y-2">
+          {notes.map((n) => (
+            <li
+              key={n.id}
+              className="flex items-start gap-4 rounded-lg border border-[var(--ns-border-subtle)] bg-[var(--ns-surface-card)] px-4 py-3"
+            >
+              <span className="flex-1 text-sm text-[var(--ns-text-primary)]">
+                {n.body}
+              </span>
+              <form action={deleteNoteAction}>
+                <input type="hidden" name="id" value={n.id} />
+                <button
+                  type="submit"
+                  className="text-sm text-[var(--ns-text-secondary)] hover:text-red-600"
+                >
+                  Remove
+                </button>
+              </form>
+            </li>
+          ))}
+          {notes.length === 0 && (
+            <li className="text-sm text-[var(--ns-text-secondary)]">
+              Nothing yet — the assistant will stick to the basics.
+            </li>
+          )}
+        </ul>
+
+        <p className="mt-4 text-xs text-[var(--ns-text-secondary)]">
+          Notes shape what the assistant knows and how it jokes. They cannot
+          override its refusal to handle patient information.
         </p>
       </div>
     </AppShell>

@@ -163,7 +163,7 @@ in every action. A server action is a public endpoint; hiding the admin link is 
 | `/preferences` | Theme control |
 | `/signed-out` | Public. Must NOT auto-redirect, or SSO re-signs them in |
 | `/not-authorized` | Public. Authenticated but not on the allow list |
-| `/admin` | Manage who can sign in. Project managers only |
+| `/admin` | Manage who can sign in, and what the assistant knows. Project managers only |
 | `/api/chat` | Northstar assistant. Auth required, re-checked in the route |
 | `/api/auth/*` | Auth.js handlers |
 
@@ -185,17 +185,21 @@ in every action. A server action is a public endpoint; hiding the admin link is 
 - `NEXT_PUBLIC_WELCOME_VIDEO_URL` blank is a supported state - the welcome screen shows a message
   and still offers Enter Northstar.
 
-**Database** - Neon Postgres, one table, `northstar_users`. Migrations in `db/`, applied by hand in
+**Database** - Neon Postgres: `northstar_users` and `northstar_assistant_notes`. Migrations in `db/`, applied by hand in
 the Neon SQL editor (no migration runner; there is one table). `deactivateUser` is a soft delete so
 there is a record of who once had access.
 
 **Northstar assistant** (`src/app/api/chat/route.ts`, `src/components/Assistant.tsx`) - a scoped
-guide to Northstar, not a general chatbot. The system prompt refuses clinical content and PHI
-outright, including when the user claims it is fake or that they have permission: a free-text box in
-a health system is the easiest way to break the section 3 rules by accident. **Do not loosen that
-section of the prompt.** Conversations are not persisted. History is trimmed to the last 10 turns
-and 4000 characters per message to bound cost. `ANTHROPIC_API_KEY` missing returns 503 rather than
-crashing.
+guide to Northstar, not a general chatbot. Conversations are not persisted. History is trimmed to
+the last 10 turns and 4000 characters per message to bound cost. `ANTHROPIC_API_KEY` missing
+returns 503 rather than crashing.
+
+Its prompt is built in three parts by `buildSystem()`: `SYSTEM_BASE`, then the team's editable
+notes from `northstar_assistant_notes`, then `SYSTEM_SAFETY` **last**. That order is the point -
+the safety section refuses clinical content and PHI even when the user claims it is fake or
+authorised, and it comes after the notes so a note cannot talk the assistant out of it. **Keep the
+safety block last and do not loosen it.** Project managers edit the notes at `/admin`; changes
+apply to the next message with no redeploy.
 
 **Not built, deliberately**
 - Any actual project management
@@ -214,6 +218,7 @@ crashing.
 | 2026-11-17 | Access control moved from Entra assignment to an in-app allow list | Ryan wants the tenant able to authenticate, with Northstar deciding who gets in |
 | 2026-11-17 | Assistant calls Anthropic directly, not through Vercel AI Gateway | Ryan wants LLUH's own Claude account; the app host and the model provider are independent |
 | 2026-11-17 | Assistant scoped to Northstar only, with a hard PHI refusal | A free-text box in a health system is how PHI leaks by accident |
+| 2026-11-17 | Assistant's personality and facts live in a table, edited at `/admin` | Ryan wants to add in-jokes without a deploy; safety block stays in code, appended last |
 | 2026-11-17 | Roster moved from env vars to Neon Postgres, with an in-app admin page | Env vars needed a redeploy per change and only Ryan could edit them |
 | 2026-11-17 | Interim testing on `northstar-liart-five.vercel.app` while DNS is pending | Decouples sign-in testing from the Cloudflare change |
 | 2026-11-17 | Next.js pinned to the 15.5.x backport line, not 16.x | 15.5.4 shipped a critical RCE and Vercel refused to deploy it; 16.x renames middleware to proxy |
