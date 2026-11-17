@@ -37,14 +37,20 @@ LLUH is a healthcare organization. Until Ryan confirms otherwise:
 
 ## 4. Account separation
 
-This work must use the **LLUH accounts**, not Ryan's personal ones. These checks are client-side and must be run locally — a cloud session cannot do them.
+Ryan has approved **personal Vercel and GitHub accounts for the POC phase** (2026-11-17). This is
+conditional: personal infrastructure is outside any LLUH BAA or contract, so the section 3 data rules
+are what keep this compliant. Synthetic data only, no production credentials — no exceptions without
+moving to work-owned infrastructure first.
+
+The **Claude Code account must still be the LLUH one**. These checks are client-side and must be run
+locally — a cloud session cannot do them.
 
 1. `/status` in Claude Code — confirm the LLUH Claude account. If not: `/logout` then `/login`.
    - Optional isolation: `CLAUDE_CONFIG_DIR=~/.claude-lluh claude`
-2. `vercel whoami` and `vercel teams ls` — confirm the intended scope.
-3. `git config user.email` and `git remote -v` — confirm the intended work identity and remote.
+2. `vercel whoami` and `vercel teams ls` — expect Ryan's personal scope for now.
+3. `git config user.email` and `git remote -v` — expect Ryan's personal GitHub for now.
 
-If any point at a personal account when work is intended, stop and tell Ryan.
+If the **Claude** account is personal rather than LLUH, stop and tell Ryan.
 
 ## 5. Setup checklist
 
@@ -53,9 +59,9 @@ If any point at a personal account when work is intended, stop and tell Ryan.
 - [ ] `npm i -g vercel`
 
 ### 5.2 GitHub
-- [ ] Create the repo under the intended LLUH-appropriate account/org
+- [ ] Create the repo under Ryan's **personal** GitHub account (private)
 - [ ] `git remote add origin <url>` and `git push -u origin main`
-- [ ] Claude GitHub App installed on that account/org (needed for cloud sessions to push)
+- [ ] Claude GitHub App installed on the personal account (needed for cloud sessions to push)
 
 ### 5.3 Vercel
 - [ ] `vercel login` (browser sign-in — confirm the correct account)
@@ -114,7 +120,8 @@ Nothing beyond the default Next.js scaffold yet. Fill in as it develops:
 
 | Date | Decision | Why |
 |---|---|---|
-| 2026-11-17 | Build POC on Vercel + GitHub; develop in Claude Code under LLUH account | Work project; keep separate from personal accounts |
+| 2026-11-17 | Build POC on Vercel + GitHub; Claude Code under LLUH account | Work project |
+| 2026-11-17 | Use Ryan's **personal** Vercel and GitHub for the POC phase | Speed to a working demo; revisit before any real data or wider rollout |
 | 2026-11-17 | Next.js 15 App Router + TypeScript + Tailwind, npm | Default Vercel path; least friction to a deployable demo |
 
 ## 10. Open questions for Ryan
@@ -122,6 +129,5 @@ Nothing beyond the default Next.js scaffold yet. Fill in as it develops:
 - [ ] **What is the POC?** Problem, audience, and what "working" looks like on demo day. Blocking — no feature code until answered.
 - [ ] Demo date.
 - [ ] Which systems must it connect to, and are sandbox instances available?
-- [ ] Is a personal Vercel account approved, or should this live in a work-owned Vercel team?
-- [ ] Synthetic data sufficient, or is real LLUH data needed? (If real: approval required first.)
+- [ ] Synthetic data sufficient? (Real LLUH data requires approval **and** moving off personal infrastructure.)
 - [ ] Who needs access to the deployed demo — does it need SSO or password protection?
