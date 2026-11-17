@@ -1,4 +1,4 @@
-# CLAUDE.md — LLUH Proof of Concept
+# CLAUDE.md — Northstar (LLUH Proof of Concept)
 
 Claude Code reads this at the start of every session.
 
@@ -6,7 +6,7 @@ Claude Code reads this at the start of every session.
 
 ## 1. Project overview
 
-- **POC name:** `lluh-poc` (working name — rename once the POC is defined)
+- **POC name:** **Northstar** (repo dir still `lluh-poc`; rename when convenient)
 - **Goal / problem it solves:** NOT YET DEFINED — see Open Questions. Do not write feature code until this is answered.
 - **Audience / who will demo it:** NOT YET DEFINED
 - **Success criteria:** NOT YET DEFINED
@@ -130,4 +130,6 @@ Nothing beyond the default Next.js scaffold yet. Fill in as it develops:
 - [ ] Demo date.
 - [ ] Which systems must it connect to, and are sandbox instances available?
 - [ ] Synthetic data sufficient? (Real LLUH data requires approval **and** moving off personal infrastructure.)
-- [ ] Who needs access to the deployed demo — does it need SSO or password protection?
+- [ ] Entra ID login: use the **LLUH tenant** (requires an IT app registration) or a **throwaway dev
+      tenant** with synthetic users for the POC? Dev tenant recommended — no IT ticket, and avoids
+      asking LLUH IT to register a corporate app pointing at personal Vercel.
