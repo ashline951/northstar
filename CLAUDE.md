@@ -27,7 +27,8 @@ Claude Code reads this at the start of every session.
   - Also serves on `https://northstar-liart-five.vercel.app`
 - Source control: GitHub
 - Auth: Auth.js v5 (`next-auth@beta`) + Microsoft Entra ID, single tenant, LLUH tenant
-- Database: **Neon Postgres** via the Vercel integration (`DATABASE_URL`); schema in `db/`
+- Database: **Neon Postgres** via the Vercel integration (`DATABASE_URL`); schema changes go in
+  `src/lib/migrations.ts` and apply themselves on deploy. `db/*.sql` is historical reference only
 - Brand: token set in `src/app/globals.css`, assets in `public/brand`
 - AI: Anthropic SDK, `claude-haiku-5-5`, called directly (not via Vercel AI Gateway)
 - Email: none yet
@@ -186,8 +187,12 @@ in every action. A server action is a public endpoint; hiding the admin link is 
 - `NEXT_PUBLIC_WELCOME_VIDEO_URL` blank is a supported state - the welcome screen shows a message
   and still offers Enter Northstar.
 
-**Migrations run from the app, not by hand.** `src/lib/migrations.ts` holds the statements;
-`/admin` applies anything pending. Nobody needs Neon access to ship a schema change. Append new
+**Migrations apply themselves on deploy.** `src/lib/migrations.ts` holds the statements;
+`ensureMigrated()` runs anything pending on the first database read after a deploy, once per
+serverless instance, called from `getActiveUser()`. Pushing code is the whole deployment step -
+nobody clicks a button or opens a SQL console. `/admin` still lists migration state with a manual
+retry, as a fallback. Failures are logged and swallowed so a broken migration cannot lock everyone
+out, and the claim is released so the next request retries. Append new
 migrations to the end, one statement per array entry (the Neon HTTP driver rejects multi-statement
 calls), and write each so re-running is harmless. A migration's name is inserted before its
 statements run, so with several serverless instances exactly one applies it; a failure deletes the
@@ -234,7 +239,7 @@ do not build anything else on them. Links are stored and rendered only when `htt
 | 2026-11-17 | Access control moved from Entra assignment to an in-app allow list | Ryan wants the tenant able to authenticate, with Northstar deciding who gets in |
 | 2026-11-17 | Assistant calls Anthropic directly, not through Vercel AI Gateway | Ryan wants LLUH's own Claude account; the app host and the model provider are independent |
 | 2026-11-17 | Assistant scoped to Northstar only, with a hard PHI refusal | A free-text box in a health system is how PHI leaks by accident |
-| 2026-11-17 | Migrations ship in code and are applied from `/admin` | So anyone building on Northstar can change schema without Neon access |
+| 2026-11-17 | Migrations ship in code and apply themselves on deploy | Pushing code is the whole deployment step; nobody should click a button or open a SQL console |
 | 2026-11-17 | `/project` workspace on throwaway `northstar_tmp_*` tables | Run the project now; migrate later rather than guessing the real model today |
 | 2026-11-17 | Project visibility is a flag, not a role | Who administers access and who is on the project are different questions |
 | 2026-11-17 | Assistant's personality and facts live in a table, edited at `/admin` | Ryan wants to add in-jokes without a deploy; safety block stays in code, appended last |

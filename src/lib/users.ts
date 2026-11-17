@@ -1,4 +1,5 @@
 import { sql } from "./db";
+import { ensureMigrated } from "./migrations";
 
 export const ROLE_PROJECT_MANAGER = "Project Manager";
 export const ROLE_MEMBER = "Member";
@@ -27,6 +28,9 @@ export async function getActiveUser(
   email?: string | null
 ): Promise<NorthstarUser | null> {
   if (!email) return null;
+  // Every authenticated path passes through here, so this is where a deploy's
+  // schema changes get applied - no button, no SQL console.
+  await ensureMigrated();
   try {
     const rows = (await sql`
       select * from northstar_users

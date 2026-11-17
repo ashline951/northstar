@@ -143,3 +143,33 @@ export async function runPendingMigrations(): Promise<string[]> {
 
   return ran;
 }
+
+/**
+ * Applies pending migrations automatically, once per serverless instance.
+ *
+ * Nobody should have to click a button or open a SQL console to get a schema
+ * change live: pushing code is the whole deployment step. The first database
+ * read after a deploy triggers this; later calls await the same settled
+ * promise, so the cost is one extra query per cold start.
+ *
+ * Failures are logged and swallowed deliberately. A broken migration must not
+ * lock everyone out of the app - the access check fails closed on its own, and
+ * /admin still shows what is outstanding with a button to retry.
+ */
+let migrationRun: Promise<void> | null = null;
+
+export function ensureMigrated(): Promise<void> {
+  if (!migrationRun) {
+    migrationRun = runPendingMigrations()
+      .then((ran) => {
+        if (ran.length) console.log("northstar: applied migrations", ran);
+      })
+      .catch((err) => {
+        console.error("northstar: migrations failed", err);
+        // Allow a later request to retry rather than staying broken for the
+        // life of this instance.
+        migrationRun = null;
+      });
+  }
+  return migrationRun;
+}
