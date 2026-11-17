@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 160" width="720" height="160">
+  <defs>
+    <linearGradient id="goldStar" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FFF5CC"/>
+      <stop offset="50%" stop-color="#FBC02D"/>
+      <stop offset="100%" stop-color="#F9A825"/>
+    </linearGradient>
+    <filter id="glow" x="-30%" y="-30%" width="160%" height="160%">
+      <feGaussianBlur stdDeviation="4" result="blur"/>
+      <feMerge>
+        <feMergeNode in="blur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+  <rect width="720" height="160" rx="16" fill="#0B132B"/>
+  <!-- Star Icon -->
+  <g transform="translate(80, 80)">
+    <circle r="46" fill="none" stroke="#FBC02D" stroke-opacity="0.3" stroke-width="1.2"/>
+    <polygon points="0,-32 5,-5 32,0 5,5 0,32 -5,5 -32,0 -5,-5" fill="url(#goldStar)" opacity="0.85" transform="rotate(45)"/>
+    <polygon points="0,-54 9,-9 54,0 9,9 0,54 -9,9 -54,0 -9,-9" fill="url(#goldStar)" filter="url(#glow)"/>
+    <circle r="6" fill="#FFFDF5"/>
+  </g>
+  <!-- Typography -->
+  <text x="155" y="76" font-family="Georgia, 'Times New Roman', serif" font-size="44" letter-spacing="4" fill="#FBC02D">NORTHSTAR</text>
+  <text x="157" y="104" font-family="Arial, Helvetica, sans-serif" font-size="14" font-weight="600" letter-spacing="2.5" fill="#E2E8F0">PROJECT MANAGEMENT SYSTEM</text>
+  <text x="157" y="128" font-family="Georgia, 'Times New Roman', serif" font-size="13" letter-spacing="1.5" fill="#CBD5E1">LOMA LINDA UNIVERSITY <tspan fill="#008472" font-weight="bold">HEALTH</tspan></text>
+</svg>

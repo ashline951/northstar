@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256">
+  <defs>
+    <radialGradient id="bgGlow" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#3A506B"/>
+      <stop offset="55%" stop-color="#1C2541"/>
+      <stop offset="100%" stop-color="#0B132B"/>
+    </radialGradient>
+    <linearGradient id="goldGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FFF5CC"/>
+      <stop offset="45%" stop-color="#FBC02D"/>
+      <stop offset="100%" stop-color="#F9A825"/>
+    </linearGradient>
+    <filter id="starGlow" x="-30%" y="-30%" width="160%" height="160%">
+      <feGaussianBlur stdDeviation="6" result="blur"/>
+      <feMerge>
+        <feMergeNode in="blur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+  <rect width="256" height="256" rx="52" fill="url(#bgGlow)"/>
+  <circle cx="128" cy="128" r="76" fill="none" stroke="#FBC02D" stroke-opacity="0.25" stroke-width="1.5"/>
+  <circle cx="128" cy="128" r="56" fill="none" stroke="#FBC02D" stroke-opacity="0.35" stroke-width="1"/>
+  <!-- Diagonal rays -->
+  <polygon points="128,72 136,120 184,128 136,136 128,184 120,136 72,128 120,120" fill="url(#goldGrad)" opacity="0.85" transform="rotate(45 128 128)"/>
+  <!-- Primary 4-point North Star -->
+  <polygon points="128,28 142,114 228,128 142,142 128,228 114,142 28,128 114,114" fill="url(#goldGrad)" filter="url(#starGlow)"/>
+  <circle cx="128" cy="128" r="10" fill="#FFFDF5"/>
+</svg>

@@ -1,55 +1,34 @@
-import { auth, signIn, signOut } from "@/auth";
+import Image from "next/image";
+import { auth } from "@/auth";
+import AppShell from "@/components/AppShell";
 
 export default async function Home() {
   const session = await auth();
+  const first = session?.user?.givenName ?? session?.user?.name?.split(" ")[0];
 
   return (
-    <main className="mx-auto flex min-h-screen max-w-2xl flex-col justify-center gap-8 px-6 py-16">
-      <div>
-        <h1 className="text-3xl font-semibold tracking-tight">Northstar</h1>
-        <p className="mt-2 text-sm text-black/60 dark:text-white/60">
-          Loma Linda University Health — proof of concept. Synthetic data only.
+    <AppShell>
+      <div className="mx-auto flex max-w-5xl flex-col items-center px-6 py-16 text-center sm:py-24">
+        <h1 className="ns-display text-2xl text-[var(--ns-text-primary)] sm:text-3xl">
+          {first ? `Welcome, ${first}` : "Welcome"}
+        </h1>
+
+        <Image
+          src="/brand/northstar-emblem-dark-bg.png"
+          alt="Northstar emblem"
+          width={300}
+          height={400}
+          priority
+          className="mt-10 h-auto w-48 rounded-2xl shadow-xl sm:w-60"
+        />
+
+        <p className="ns-display mt-10 text-3xl tracking-wide text-[var(--ns-text-primary)] sm:text-5xl">
+          Endless Possibilities
+        </p>
+        <p className="mt-4 text-sm tracking-widest text-[var(--ns-text-secondary)] uppercase">
+          Loma Linda University Health
         </p>
       </div>
-
-      {session?.user ? (
-        <div className="flex flex-col gap-4 rounded-lg border border-black/10 p-6 dark:border-white/15">
-          <div>
-            <p className="text-sm text-black/60 dark:text-white/60">Signed in as</p>
-            <p className="font-medium">{session.user.name ?? "Unknown"}</p>
-            <p className="text-sm text-black/60 dark:text-white/60">
-              {session.user.email ?? "no email claim"}
-            </p>
-          </div>
-          <form
-            action={async () => {
-              "use server";
-              await signOut({ redirectTo: "/" });
-            }}
-          >
-            <button
-              type="submit"
-              className="rounded-md border border-black/15 px-4 py-2 text-sm font-medium hover:bg-black/5 dark:border-white/20 dark:hover:bg-white/10"
-            >
-              Sign out
-            </button>
-          </form>
-        </div>
-      ) : (
-        <form
-          action={async () => {
-            "use server";
-            await signIn("microsoft-entra-id", { redirectTo: "/" });
-          }}
-        >
-          <button
-            type="submit"
-            className="rounded-md bg-[#0072c6] px-4 py-2 text-sm font-medium text-white hover:bg-[#005ea2]"
-          >
-            Sign in with Microsoft
-          </button>
-        </form>
-      )}
-    </main>
+    </AppShell>
   );
 }

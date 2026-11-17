@@ -1,7 +1,9 @@
 export { auth as middleware } from "@/auth";
 
 export const config = {
-  // Protect everything except Next internals, static files, and the auth routes
-  // themselves. Adjust as Northstar's route map firms up.
-  matcher: ["/((?!api/auth|_next/static|_next/image|favicon.ico).*)"],
+  // Everything requires sign-in except Next internals, the auth routes, the
+  // signed-out page, and static brand assets.
+  matcher: [
+    "/((?!api/auth|signed-out|_next/static|_next/image|brand|favicon|app-icon).*)",
+  ],
 };
