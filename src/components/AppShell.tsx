@@ -1,7 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { auth, signOut } from "@/auth";
-import { hasSeenWelcome } from "@/lib/users";
+import { getActiveUser } from "@/lib/users";
 import UserMenu from "./UserMenu";
 import WelcomeGate from "./WelcomeGate";
 import Assistant from "./Assistant";
@@ -13,7 +13,11 @@ export default async function AppShell({
 }) {
   const session = await auth();
   const user = session?.user;
-  const seenWelcome = user ? await hasSeenWelcome(user.email) : true;
+  // One lookup serves both the welcome gate and the Project link, and means
+  // neither depends on a stale JWT claim.
+  const record = user ? await getActiveUser(user.email) : null;
+  const seenWelcome = Boolean(record?.welcome_seen_at);
+  const canSeeProject = Boolean(record?.has_project_access);
 
   async function signOutAction() {
     "use server";
@@ -40,6 +44,17 @@ export default async function AppShell({
               Northstar
             </span>
           </Link>
+
+          <nav className="ml-6 flex flex-1 items-center gap-5">
+            {canSeeProject && (
+              <Link
+                href="/project"
+                className="text-sm font-medium text-[var(--ns-text-inverse)]/75 transition hover:text-[var(--ns-gold-light)]"
+              >
+                Northstar Project
+              </Link>
+            )}
+          </nav>
 
           {user && (
             <UserMenu

@@ -7,11 +7,14 @@ import {
   listUsers,
 } from "@/lib/users";
 import { listNotes } from "@/lib/assistant";
+import { migrationState } from "@/lib/migrations";
 import {
   addNoteAction,
   addUserAction,
   deactivateUserAction,
   deleteNoteAction,
+  runMigrationsAction,
+  setProjectAccessAction,
   setRoleAction,
 } from "./actions";
 
@@ -36,6 +39,8 @@ export default async function AdminPage() {
 
   const users = await listUsers();
   const notes = await listNotes();
+  const migrations = await migrationState();
+  const pending = migrations.filter((m) => !m.applied_at);
   const input =
     "w-full rounded-lg border border-[var(--ns-border-subtle)] bg-[var(--ns-surface-card)] px-3 py-2 text-sm text-[var(--ns-text-primary)]";
 
@@ -74,6 +79,7 @@ export default async function AdminPage() {
               <tr>
                 <th className="px-4 py-3 font-semibold">Person</th>
                 <th className="px-4 py-3 font-semibold">Role</th>
+                <th className="px-4 py-3 font-semibold">Project</th>
                 <th className="px-4 py-3 font-semibold">Watched intro</th>
                 <th className="px-4 py-3" />
               </tr>
@@ -122,6 +128,26 @@ export default async function AdminPage() {
                           </button>
                         </form>
                       )}
+                    </td>
+                    <td className="px-4 py-3">
+                      <form action={setProjectAccessAction}>
+                        <input type="hidden" name="email" value={u.email} />
+                        <input
+                          type="hidden"
+                          name="allowed"
+                          value={u.has_project_access ? "false" : "true"}
+                        />
+                        <button
+                          type="submit"
+                          className={
+                            u.has_project_access
+                              ? "text-[var(--ns-lluh-teal)] underline-offset-2 hover:underline"
+                              : "text-[var(--ns-text-secondary)] underline-offset-2 hover:underline"
+                          }
+                        >
+                          {u.has_project_access ? "Yes" : "No"}
+                        </button>
+                      </form>
                     </td>
                     <td className="px-4 py-3 text-[var(--ns-text-secondary)]">
                       {u.welcome_seen_at
@@ -211,6 +237,47 @@ export default async function AdminPage() {
           Notes shape what the assistant knows and how it jokes. They cannot
           override its refusal to handle patient information.
         </p>
+
+        <h2 className="ns-display mt-14 text-2xl text-[var(--ns-text-primary)]">
+          Database
+        </h2>
+        <p className="mt-2 text-sm text-[var(--ns-text-secondary)]">
+          Schema changes ship with the code and are applied from here — nobody
+          needs to paste SQL into Neon.
+        </p>
+
+        <div className="mt-4 rounded-xl border border-[var(--ns-border-subtle)] bg-[var(--ns-surface-card)] p-5">
+          <ul className="space-y-1 text-sm">
+            {migrations.map((m) => (
+              <li key={m.name} className="flex items-center justify-between gap-4">
+                <code className="text-[var(--ns-text-primary)]">{m.name}</code>
+                <span
+                  className={
+                    m.applied_at
+                      ? "text-xs text-[var(--ns-lluh-teal)]"
+                      : "text-xs font-medium text-[var(--ns-amber-warm)]"
+                  }
+                >
+                  {m.applied_at
+                    ? `applied ${new Date(m.applied_at).toLocaleDateString()}`
+                    : "pending"}
+                </span>
+              </li>
+            ))}
+          </ul>
+
+          <form action={runMigrationsAction} className="mt-4">
+            <button
+              type="submit"
+              disabled={pending.length === 0}
+              className="rounded-lg bg-[var(--ns-bg-night-sky)] px-5 py-2 text-sm font-medium text-[var(--ns-text-inverse)] disabled:opacity-40"
+            >
+              {pending.length === 0
+                ? "Everything applied"
+                : `Apply ${pending.length} pending`}
+            </button>
+          </form>
+        </div>
       </div>
     </AppShell>
   );

@@ -163,7 +163,8 @@ in every action. A server action is a public endpoint; hiding the admin link is 
 | `/preferences` | Theme control |
 | `/signed-out` | Public. Must NOT auto-redirect, or SSO re-signs them in |
 | `/not-authorized` | Public. Authenticated but not on the allow list |
-| `/admin` | Manage who can sign in, and what the assistant knows. Project managers only |
+| `/admin` | Access, assistant notes, project access, migrations. Project managers only |
+| `/project` | Northstar project workspace. `has_project_access` only |
 | `/api/chat` | Northstar assistant. Auth required, re-checked in the route |
 | `/api/auth/*` | Auth.js handlers |
 
@@ -185,7 +186,15 @@ in every action. A server action is a public endpoint; hiding the admin link is 
 - `NEXT_PUBLIC_WELCOME_VIDEO_URL` blank is a supported state - the welcome screen shows a message
   and still offers Enter Northstar.
 
-**Database** - Neon Postgres: `northstar_users` and `northstar_assistant_notes`. Migrations in `db/`, applied by hand in
+**Migrations run from the app, not by hand.** `src/lib/migrations.ts` holds the statements;
+`/admin` applies anything pending. Nobody needs Neon access to ship a schema change. Append new
+migrations to the end, one statement per array entry (the Neon HTTP driver rejects multi-statement
+calls), and write each so re-running is harmless. A migration's name is inserted before its
+statements run, so with several serverless instances exactly one applies it; a failure deletes the
+claim so a retry picks it up.
+
+**Database** - Neon Postgres: `northstar_users`, `northstar_assistant_notes`, and the
+`northstar_tmp_project_*` tables. Migrations in `db/`, applied by hand in
 the Neon SQL editor (no migration runner; there is one table). `deactivateUser` is a soft delete so
 there is a record of who once had access.
 
@@ -201,8 +210,15 @@ authorised, and it comes after the notes so a note cannot talk the assistant out
 safety block last and do not loosen it.** Project managers edit the notes at `/admin`; changes
 apply to the next message with no redeploy.
 
+**Northstar project workspace** (`/project`) - a stop-gap for running the Northstar project itself,
+gated on `northstar_users.has_project_access` (separate from `role`: who administers access and who
+is on the project are different questions). Checked against the database on every render, not from
+the JWT, so a grant takes effect without re-signing in. Backed by **`northstar_tmp_*` tables, which
+are deliberately throwaway** - migrate what is worth keeping when real project management ships, and
+do not build anything else on them. Links are stored and rendered only when `https://`.
+
 **Not built, deliberately**
-- Any actual project management
+- Real project management (the `/project` page is a stop-gap, not the product)
 - Entra security groups - roles are in-app only
 
 ## 9. Decisions log
@@ -218,6 +234,9 @@ apply to the next message with no redeploy.
 | 2026-11-17 | Access control moved from Entra assignment to an in-app allow list | Ryan wants the tenant able to authenticate, with Northstar deciding who gets in |
 | 2026-11-17 | Assistant calls Anthropic directly, not through Vercel AI Gateway | Ryan wants LLUH's own Claude account; the app host and the model provider are independent |
 | 2026-11-17 | Assistant scoped to Northstar only, with a hard PHI refusal | A free-text box in a health system is how PHI leaks by accident |
+| 2026-11-17 | Migrations ship in code and are applied from `/admin` | So anyone building on Northstar can change schema without Neon access |
+| 2026-11-17 | `/project` workspace on throwaway `northstar_tmp_*` tables | Run the project now; migrate later rather than guessing the real model today |
+| 2026-11-17 | Project visibility is a flag, not a role | Who administers access and who is on the project are different questions |
 | 2026-11-17 | Assistant's personality and facts live in a table, edited at `/admin` | Ryan wants to add in-jokes without a deploy; safety block stays in code, appended last |
 | 2026-11-17 | Roster moved from env vars to Neon Postgres, with an in-app admin page | Env vars needed a redeploy per change and only Ryan could edit them |
 | 2026-11-17 | Interim testing on `northstar-liart-five.vercel.app` while DNS is pending | Decouples sign-in testing from the Cloudflare change |

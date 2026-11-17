@@ -8,9 +8,11 @@ import {
   addUser,
   deactivateUser,
   getActiveUser,
+  setProjectAccess,
   setRole,
 } from "@/lib/users";
 import { addNote, deleteNote } from "@/lib/assistant";
+import { runPendingMigrations } from "@/lib/migrations";
 
 /**
  * Every action re-checks the caller server-side. A server action is a public
@@ -81,5 +83,21 @@ export async function deleteNoteAction(formData: FormData) {
   const id = Number(formData.get("id"));
   if (!Number.isInteger(id)) return;
   await deleteNote(id);
+  revalidatePath("/admin");
+}
+
+export async function setProjectAccessAction(formData: FormData) {
+  await requireProjectManager();
+  const email = String(formData.get("email") ?? "").trim();
+  const allowed = formData.get("allowed") === "true";
+  if (!email) return;
+  await setProjectAccess(email, allowed);
+  revalidatePath("/admin");
+  revalidatePath("/project");
+}
+
+export async function runMigrationsAction() {
+  await requireProjectManager();
+  await runPendingMigrations();
   revalidatePath("/admin");
 }

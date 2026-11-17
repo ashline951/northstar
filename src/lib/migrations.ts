@@ -1,0 +1,130 @@
+import { sql } from "./db";
+
+/**
+ * Schema migrations, applied from the app rather than by hand in the Neon
+ * console - so anyone empowered to build on Northstar can ship a schema change
+ * without database access.
+ *
+ * Rules for adding one:
+ *  - Append to the end. Never edit or reorder an applied migration.
+ *  - One SQL statement per array entry. The Neon HTTP driver rejects multiple
+ *    commands in a single call.
+ *  - Write every statement so re-running it is harmless (`if not exists`,
+ *    `on conflict do nothing`). Belt and braces against a half-applied run.
+ *
+ * Concurrency: several serverless instances may try at once. The name is
+ * inserted first and the insert only returns a row to the instance that won,
+ * so exactly one runs the statements.
+ */
+type Migration = { name: string; statements: string[] };
+
+export const MIGRATIONS: Migration[] = [
+  {
+    name: "001_users",
+    statements: [
+      `create table if not exists northstar_users (
+         email           text primary key,
+         display_name    text,
+         role            text not null default 'Member'
+                         check (role in ('Member', 'Project Manager')),
+         is_active       boolean not null default true,
+         welcome_seen_at timestamptz,
+         invited_by      text,
+         created_at      timestamptz not null default now()
+       )`,
+      `create unique index if not exists northstar_users_email_lower
+         on northstar_users (lower(email))`,
+    ],
+  },
+  {
+    name: "003_assistant_notes",
+    statements: [
+      `create table if not exists northstar_assistant_notes (
+         id         serial primary key,
+         body       text not null,
+         is_active  boolean not null default true,
+         added_by   text,
+         created_at timestamptz not null default now()
+       )`,
+    ],
+  },
+  {
+    name: "004_project",
+    statements: [
+      `alter table northstar_users
+         add column if not exists has_project_access boolean not null default false`,
+      `create table if not exists northstar_tmp_project_items (
+         id          serial primary key,
+         title       text not null,
+         status      text not null default 'Not started'
+                     check (status in ('Not started', 'In progress', 'Blocked', 'Done')),
+         owner_email text,
+         notes       text,
+         due_on      date,
+         created_by  text,
+         created_at  timestamptz not null default now(),
+         updated_at  timestamptz not null default now()
+       )`,
+      `create table if not exists northstar_tmp_project_links (
+         id         serial primary key,
+         label      text not null,
+         url        text not null,
+         added_by   text,
+         created_at timestamptz not null default now()
+       )`,
+    ],
+  },
+];
+
+export type MigrationState = { name: string; applied_at: string | null };
+
+async function ensureTable(): Promise<void> {
+  await sql`
+    create table if not exists northstar_migrations (
+      name       text primary key,
+      applied_at timestamptz not null default now()
+    )
+  `;
+}
+
+export async function migrationState(): Promise<MigrationState[]> {
+  await ensureTable();
+  const rows = (await sql`
+    select name, applied_at from northstar_migrations
+  `) as { name: string; applied_at: string }[];
+  const applied = new Map(rows.map((r) => [r.name, r.applied_at]));
+  return MIGRATIONS.map((m) => ({
+    name: m.name,
+    applied_at: applied.get(m.name) ?? null,
+  }));
+}
+
+/** Applies anything outstanding. Returns the names it ran. */
+export async function runPendingMigrations(): Promise<string[]> {
+  await ensureTable();
+  const ran: string[] = [];
+
+  for (const m of MIGRATIONS) {
+    // Claim it first: only the instance whose insert returns a row proceeds.
+    const claimed = (await sql`
+      insert into northstar_migrations (name) values (${m.name})
+      on conflict (name) do nothing
+      returning name
+    `) as { name: string }[];
+    if (claimed.length === 0) continue;
+
+    try {
+      for (const stmt of m.statements) await sql.query(stmt);
+      ran.push(m.name);
+    } catch (err) {
+      // Release the claim so a retry can pick it up rather than it looking
+      // applied when it is not.
+      await sql`delete from northstar_migrations where name = ${m.name}`;
+      throw new Error(
+        `Migration ${m.name} failed: ${err instanceof Error ? err.message : String(err)}`
+      );
+    }
+  }
+
+  return ran;
+}

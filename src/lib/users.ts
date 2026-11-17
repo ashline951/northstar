@@ -9,6 +9,7 @@ export type NorthstarUser = {
   role: string;
   is_active: boolean;
   welcome_seen_at: string | null;
+  has_project_access: boolean;
   invited_by: string | null;
   created_at: string;
 };
@@ -88,6 +89,16 @@ export async function deactivateUser(email: string): Promise<void> {
 export async function setRole(email: string, role: string): Promise<void> {
   await sql`
     update northstar_users set role = ${role}
+    where lower(email) = ${email.toLowerCase()}
+  `;
+}
+
+export async function setProjectAccess(
+  email: string,
+  allowed: boolean
+): Promise<void> {
+  await sql`
+    update northstar_users set has_project_access = ${allowed}
     where lower(email) = ${email.toLowerCase()}
   `;
 }
