@@ -21,7 +21,9 @@ Claude Code reads this at the start of every session.
 - Tailwind CSS v4, ESLint
 - `src/` directory, import alias `@/*`
 - Package manager: **npm** (do not mix in pnpm/yarn)
-- Hosting: Vercel, team **LLUH POC**, custom domain **northstar.lluh.app**
+- Hosting: Vercel, team **LLUH POC**, project `northstar`
+  - Target domain: **northstar.lluh.app** (pending DNS)
+  - Interim URL: **https://northstar-liart-five.vercel.app**
 - Source control: GitHub
 - Auth: Auth.js v5 (`next-auth@beta`) + Microsoft Entra ID, single tenant, LLUH tenant
 - Database: none (deliberate - see Architecture)
@@ -70,12 +72,14 @@ If the **Claude** account is personal rather than LLUH, stop and tell Ryan.
 ### 5.3 Vercel — Ryan does this in the dashboard (no CLI needed)
 Ryan is not running this app locally. Deployment is git-based: push to `main`, Vercel builds.
 
-- [ ] LLUH POC team → Add New → Project → import `ashline951/northstar`
-- [ ] Add the six environment variables from 5.5 **before the first deploy**
+- [x] LLUH POC team → imported `ashline951/northstar`, deployed
+- [x] Environment variables added
+- [ ] `AUTH_URL` set to the interim Vercel URL, then redeploy (env vars need a new build)
 - [ ] Settings → Domains → add `northstar.lluh.app`; send the CNAME to whoever runs Cloudflare
       (`docs/northstar-dns-setup.md`)
-- [ ] Note the generated `*.vercel.app` URL and have the Identity team add it as a third redirect
-      URI, so sign-in can be tested without waiting on DNS
+- [ ] Identity team to add the interim redirect URI:
+      `https://northstar-liart-five.vercel.app/api/auth/callback/microsoft-entra-id`
+- [ ] Switch `AUTH_URL` to `https://northstar.lluh.app` once DNS resolves, and redeploy
 - [x] `.env*` and `.vercel` are gitignored
 - [ ] Vercel MCP server: `claude mcp add --transport http vercel https://mcp.vercel.com`, then `/mcp` and complete browser sign-in
 
@@ -91,6 +95,7 @@ Record base URL, auth method, and env var **names** below. Never record secret v
 | Variable | Purpose | Where it is set | Notes |
 |---|---|---|---|
 | `AUTH_SECRET` | Auth.js session/JWT signing | `.env.local` + Vercel | `npx auth secret` |
+| `AUTH_URL` | Public origin Auth.js builds callback URLs from | Vercel | **Must match a registered Entra redirect URI**, or sign-in fails with redirect_uri mismatch |
 | `NORTHSTAR_PROJECT_MANAGERS` | Comma-separated emails with the Project Manager role | `.env.local` + Vercel | Keeps staff addresses out of git |
 | `NEXT_PUBLIC_WELCOME_VIDEO_URL` | Welcome video source | `.env.local` + Vercel | Blank is handled gracefully |
 | `AUTH_MICROSOFT_ENTRA_ID_ID` | Entra Application (client) ID | `.env.local` + Vercel | Not secret |
@@ -172,6 +177,7 @@ claim is on. Client secret expires ~2027-05.
 | 2026-11-17 | Next.js 15 App Router + TypeScript + Tailwind, npm | Default Vercel path; least friction to a deployable demo |
 | 2026-11-17 | Entra ID sign-in via Auth.js v5; `User.Read` scope dropped | Keeps the app registration to the three standard OIDC scopes |
 | 2026-11-17 | Pin to `northstar.lluh.app` rather than per-deploy preview URLs | Entra redirect URIs require exact matches; one stable URI |
+| 2026-11-17 | Interim testing on `northstar-liart-five.vercel.app` while DNS is pending | Decouples sign-in testing from the Cloudflare change |
 | 2026-11-17 | No local development; deploy from GitHub to Vercel only | Ryan's choice. Means the deployed app is the first test, and preview deploys cannot authenticate |
 
 ## 10. Open questions for Ryan
