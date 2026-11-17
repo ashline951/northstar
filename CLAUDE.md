@@ -22,8 +22,9 @@ Claude Code reads this at the start of every session.
 - `src/` directory, import alias `@/*`
 - Package manager: **npm** (do not mix in pnpm/yarn)
 - Hosting: Vercel, team **LLUH POC**, project `northstar`
-  - Target domain: **northstar.lluh.app** (pending DNS)
-  - Interim URL: **https://northstar-liart-five.vercel.app**
+  - **https://northstar.lluh.app** — LIVE. Cloudflare CNAME to `cname.vercel-dns.com`, DNS only
+    (not proxied; proxying causes redirect loops with Vercel). TLS issued by Vercel.
+  - Also serves on `https://northstar-liart-five.vercel.app`
 - Source control: GitHub
 - Auth: Auth.js v5 (`next-auth@beta`) + Microsoft Entra ID, single tenant, LLUH tenant
 - Database: **Neon Postgres** via the Vercel integration (`DATABASE_URL`); schema in `db/`
@@ -75,8 +76,7 @@ Ryan is not running this app locally. Deployment is git-based: push to `main`, V
 - [x] LLUH POC team → imported `ashline951/northstar`, deployed
 - [x] Environment variables added
 - [ ] `AUTH_URL` set to the interim Vercel URL, then redeploy (env vars need a new build)
-- [ ] Settings → Domains → add `northstar.lluh.app`; send the CNAME to whoever runs Cloudflare
-      (`docs/northstar-dns-setup.md`)
+- [x] Domain `northstar.lluh.app` added, CNAME created in Cloudflare, certificate issued
 - [ ] Identity team to add the interim redirect URI:
       `https://northstar-liart-five.vercel.app/api/auth/callback/microsoft-entra-id`
 - [ ] Switch `AUTH_URL` to `https://northstar.lluh.app` once DNS resolves, and redeploy
@@ -166,7 +166,12 @@ in every action. A server action is a public endpoint; hiding the admin link is 
 | `/api/auth/*` | Auth.js handlers |
 
 **Key decisions baked into the code**
-- Middleware protects everything except `/api/auth`, `/signed-out` and static brand assets.
+- **The route guard is `callbacks.authorized` in `src/auth.config.ts`, not the matcher.** Exporting
+  `auth` as middleware without it only attaches session info and blocks nothing - every route
+  answered 200 to anonymous callers until this was added. If routes ever go public again, look here
+  first. Verify with `curl -o /dev/null -w '%{http_code}' <url>/admin` - it must be 307, not 200.
+- `/signin` bounces straight to Entra rather than showing a provider picker: one provider, and
+  sign-in should be invisible on a corporate device.
 - Graph profile (name, title, department, 64px photo) is fetched once in the `jwt` callback at
   sign-in and carried in the session cookie. Photo size is kept small because Auth.js has to chunk
   the cookie past ~4KB.
@@ -199,6 +204,7 @@ there is a record of who once had access.
 | 2026-11-17 | Access control moved from Entra assignment to an in-app allow list | Ryan wants the tenant able to authenticate, with Northstar deciding who gets in |
 | 2026-11-17 | Roster moved from env vars to Neon Postgres, with an in-app admin page | Env vars needed a redeploy per change and only Ryan could edit them |
 | 2026-11-17 | Interim testing on `northstar-liart-five.vercel.app` while DNS is pending | Decouples sign-in testing from the Cloudflare change |
+| 2026-11-17 | Next.js pinned to the 15.5.x backport line, not 16.x | 15.5.4 shipped a critical RCE and Vercel refused to deploy it; 16.x renames middleware to proxy |
 | 2026-11-17 | No local development; deploy from GitHub to Vercel only | Ryan's choice. Means the deployed app is the first test, and preview deploys cannot authenticate |
 
 ## 10. Open questions for Ryan
@@ -208,4 +214,3 @@ there is a record of who once had access.
 - [ ] Ask Identity to turn **Assignment required OFF**; Northstar now gates access itself.
 - [ ] Which systems must it connect to (ServiceNow, Clear Skye), and are sandboxes available?
 - [ ] Synthetic data sufficient? (Real LLUH data requires approval **and** moving off personal infrastructure.)
-- [ ] Who controls DNS for `lluh.app`, and can they add the CNAME?
