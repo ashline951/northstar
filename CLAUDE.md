@@ -96,7 +96,8 @@ Record base URL, auth method, and env var **names** below. Never record secret v
 |---|---|---|---|
 | `AUTH_SECRET` | Auth.js session/JWT signing | `.env.local` + Vercel | `npx auth secret` |
 | `AUTH_URL` | Public origin Auth.js builds callback URLs from | Vercel | **Must match a registered Entra redirect URI**, or sign-in fails with redirect_uri mismatch |
-| `NORTHSTAR_PROJECT_MANAGERS` | Comma-separated emails with the Project Manager role | `.env.local` + Vercel | Keeps staff addresses out of git |
+| `NORTHSTAR_ALLOWED_USERS` | Comma-separated emails permitted to sign in | Vercel | **Access control.** Empty = nobody gets in |
+| `NORTHSTAR_PROJECT_MANAGERS` | Subset with the Project Manager role; implicitly allowed | Vercel | Keeps staff addresses out of git |
 | `NEXT_PUBLIC_WELCOME_VIDEO_URL` | Welcome video source | `.env.local` + Vercel | Blank is handled gracefully |
 | `AUTH_MICROSOFT_ENTRA_ID_ID` | Entra Application (client) ID | `.env.local` + Vercel | Not secret |
 | `AUTH_MICROSOFT_ENTRA_ID_TENANT_ID` | Entra Directory (tenant) ID | `.env.local` + Vercel | Not secret |
@@ -135,9 +136,17 @@ No test runner is configured yet.
 
 ## 8. Architecture notes
 
-**Entra app registration** `Northstar POC`, LLUH tenant, single tenant, assignment required.
-Delegated Graph scopes: `openid profile email User.Read User.ReadBasic.All`. Optional `email`
-claim is on. Client secret expires ~2027-05.
+**Entra app registration** `Northstar POC`, LLUH tenant, single tenant, **assignment NOT required** -
+anyone in the tenant can authenticate. Delegated Graph scopes:
+`openid profile email User.Read User.ReadBasic.All`. Optional `email` claim is on. Client secret
+expires ~2027-05.
+
+**Authorization is Northstar's job, not Entra's.** The `signIn` callback in `src/auth.ts` checks the
+email against `NORTHSTAR_ALLOWED_USERS` + `NORTHSTAR_PROJECT_MANAGERS` and sends anyone else to
+`/not-authorized`. This is a deliberate trade Ryan chose: Entra assignment is enforced by Microsoft
+before a token is issued, whereas this is enforced by our code afterwards. **Do not weaken the
+`signIn` callback** - it is the only thing standing between a tenant-wide identity and the app.
+It fails closed: unset variables admit nobody.
 
 **Routes**
 | Route | Notes |
@@ -146,6 +155,7 @@ claim is on. Client secret expires ~2027-05.
 | `/profile` | Entra/Graph details, read-only |
 | `/preferences` | Theme control |
 | `/signed-out` | Public. Must NOT auto-redirect, or SSO re-signs them in |
+| `/not-authorized` | Public. Authenticated but not on the allow list |
 | `/api/auth/*` | Auth.js handlers |
 
 **Key decisions baked into the code**
@@ -177,6 +187,7 @@ claim is on. Client secret expires ~2027-05.
 | 2026-11-17 | Next.js 15 App Router + TypeScript + Tailwind, npm | Default Vercel path; least friction to a deployable demo |
 | 2026-11-17 | Entra ID sign-in via Auth.js v5; `User.Read` scope dropped | Keeps the app registration to the three standard OIDC scopes |
 | 2026-11-17 | Pin to `northstar.lluh.app` rather than per-deploy preview URLs | Entra redirect URIs require exact matches; one stable URI |
+| 2026-11-17 | Access control moved from Entra assignment to an in-app allow list | Ryan wants the tenant able to authenticate, with Northstar deciding who gets in |
 | 2026-11-17 | Interim testing on `northstar-liart-five.vercel.app` while DNS is pending | Decouples sign-in testing from the Cloudflare change |
 | 2026-11-17 | No local development; deploy from GitHub to Vercel only | Ryan's choice. Means the deployed app is the first test, and preview deploys cannot authenticate |
 
@@ -185,7 +196,8 @@ claim is on. Client secret expires ~2027-05.
 - [ ] Demo date.
 - [ ] Welcome video file (Gemini, ~60s) — then set `NEXT_PUBLIC_WELCOME_VIDEO_URL`.
 - [ ] Project Manager roster — emails for `NORTHSTAR_PROJECT_MANAGERS`.
-- [ ] Assign the core team in Entra. **Assignment required is ON** — unassigned users cannot sign in.
+- [ ] Ask Identity to turn **Assignment required OFF**; Northstar now gates access itself.
+- [ ] The allow list of emails for `NORTHSTAR_ALLOWED_USERS`.
 - [ ] Which systems must it connect to (ServiceNow, Clear Skye), and are sandboxes available?
 - [ ] Synthetic data sufficient? (Real LLUH data requires approval **and** moving off personal infrastructure.)
 - [ ] Who controls DNS for `lluh.app`, and can they add the CNAME?

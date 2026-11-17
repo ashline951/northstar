@@ -1,6 +1,6 @@
 import NextAuth from "next-auth";
 import MicrosoftEntraID from "next-auth/providers/microsoft-entra-id";
-import { roleForEmail } from "@/lib/roles";
+import { isAllowed, roleForEmail } from "@/lib/roles";
 
 const tenantId = process.env.AUTH_MICROSOFT_ENTRA_ID_TENANT_ID;
 
@@ -73,6 +73,17 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   session: { strategy: "jwt" },
   pages: { signOut: "/signed-out" },
   callbacks: {
+    /**
+     * Northstar's access gate. Entra will authenticate anyone in the tenant;
+     * only people on the allow list get a session. Returning a path sends
+     * them to a page that explains it rather than a generic auth error.
+     */
+    async signIn({ profile }) {
+      const email = profile?.email ?? profile?.preferred_username;
+      return isAllowed(typeof email === "string" ? email : null)
+        ? true
+        : "/not-authorized";
+    },
     async jwt({ token, account }) {
       // Only on initial sign-in, when we have an access token to spend.
       if (account?.access_token) {
