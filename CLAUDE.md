@@ -29,8 +29,8 @@ Claude Code reads this at the start of every session.
 - Auth: Auth.js v5 (`next-auth@beta`) + Microsoft Entra ID, single tenant, LLUH tenant
 - Database: **Neon Postgres** via the Vercel integration (`DATABASE_URL`); schema in `db/`
 - Brand: token set in `src/app/globals.css`, assets in `public/brand`
+- AI: Anthropic SDK, `claude-haiku-5-5`, called directly (not via Vercel AI Gateway)
 - Email: none yet
-- Other integrations: none yet
 
 ## 3. Data and compliance rules (read first)
 
@@ -95,6 +95,7 @@ Record base URL, auth method, and env var **names** below. Never record secret v
 | Variable | Purpose | Where it is set | Notes |
 |---|---|---|---|
 | `AUTH_SECRET` | Auth.js session/JWT signing | `.env.local` + Vercel | `npx auth secret` |
+| `ANTHROPIC_API_KEY` | Northstar assistant | Vercel | **Secret.** Missing = assistant returns 503, rest of the app is fine |
 | `AUTH_URL` | Public origin Auth.js builds callback URLs from | Vercel | **Must match a registered Entra redirect URI**, or sign-in fails with redirect_uri mismatch |
 | `DATABASE_URL` | Neon Postgres | Vercel (set by the integration) | Access control and roles live here, not in env vars |
 | `NEXT_PUBLIC_WELCOME_VIDEO_URL` | Welcome video source | `.env.local` + Vercel | Blank is handled gracefully |
@@ -163,6 +164,7 @@ in every action. A server action is a public endpoint; hiding the admin link is 
 | `/signed-out` | Public. Must NOT auto-redirect, or SSO re-signs them in |
 | `/not-authorized` | Public. Authenticated but not on the allow list |
 | `/admin` | Manage who can sign in. Project managers only |
+| `/api/chat` | Northstar assistant. Auth required, re-checked in the route |
 | `/api/auth/*` | Auth.js handlers |
 
 **Key decisions baked into the code**
@@ -187,6 +189,14 @@ in every action. A server action is a public endpoint; hiding the admin link is 
 the Neon SQL editor (no migration runner; there is one table). `deactivateUser` is a soft delete so
 there is a record of who once had access.
 
+**Northstar assistant** (`src/app/api/chat/route.ts`, `src/components/Assistant.tsx`) - a scoped
+guide to Northstar, not a general chatbot. The system prompt refuses clinical content and PHI
+outright, including when the user claims it is fake or that they have permission: a free-text box in
+a health system is the easiest way to break the section 3 rules by accident. **Do not loosen that
+section of the prompt.** Conversations are not persisted. History is trimmed to the last 10 turns
+and 4000 characters per message to bound cost. `ANTHROPIC_API_KEY` missing returns 503 rather than
+crashing.
+
 **Not built, deliberately**
 - Any actual project management
 - Entra security groups - roles are in-app only
@@ -202,6 +212,8 @@ there is a record of who once had access.
 | 2026-11-17 | Entra ID sign-in via Auth.js v5; `User.Read` scope dropped | Keeps the app registration to the three standard OIDC scopes |
 | 2026-11-17 | Pin to `northstar.lluh.app` rather than per-deploy preview URLs | Entra redirect URIs require exact matches; one stable URI |
 | 2026-11-17 | Access control moved from Entra assignment to an in-app allow list | Ryan wants the tenant able to authenticate, with Northstar deciding who gets in |
+| 2026-11-17 | Assistant calls Anthropic directly, not through Vercel AI Gateway | Ryan wants LLUH's own Claude account; the app host and the model provider are independent |
+| 2026-11-17 | Assistant scoped to Northstar only, with a hard PHI refusal | A free-text box in a health system is how PHI leaks by accident |
 | 2026-11-17 | Roster moved from env vars to Neon Postgres, with an in-app admin page | Env vars needed a redeploy per change and only Ryan could edit them |
 | 2026-11-17 | Interim testing on `northstar-liart-five.vercel.app` while DNS is pending | Decouples sign-in testing from the Cloudflare change |
 | 2026-11-17 | Next.js pinned to the 15.5.x backport line, not 16.x | 15.5.4 shipped a critical RCE and Vercel refused to deploy it; 16.x renames middleware to proxy |

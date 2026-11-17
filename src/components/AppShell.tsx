@@ -4,6 +4,7 @@ import { auth, signOut } from "@/auth";
 import { hasSeenWelcome } from "@/lib/users";
 import UserMenu from "./UserMenu";
 import WelcomeGate from "./WelcomeGate";
+import Assistant from "./Assistant";
 
 export default async function AppShell({
   children,
@@ -56,7 +57,10 @@ export default async function AppShell({
       <main className="flex-1">{children}</main>
 
       {user && (
-        <WelcomeGate firstName={user.givenName ?? null} seen={seenWelcome} />
+        <>
+          <Assistant />
+          <WelcomeGate firstName={user.givenName ?? null} seen={seenWelcome} />
+        </>
       )}
     </div>
   );
