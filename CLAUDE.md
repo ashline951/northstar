@@ -6,7 +6,7 @@ Claude Code reads this at the start of every session.
 
 ## 1. Project overview
 
-- **POC name:** **Northstar** (repo dir still `lluh-poc`; rename when convenient)
+- **POC name:** **Northstar** (package name `northstar`, Vercel project `northstar`)
 - **Goal / problem it solves:** NOT YET DEFINED — see Open Questions. Do not write feature code until this is answered.
 - **Audience / who will demo it:** NOT YET DEFINED
 - **Success criteria:** NOT YET DEFINED
