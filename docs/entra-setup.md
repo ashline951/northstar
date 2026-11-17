@@ -25,21 +25,20 @@ Platform: **Web**. Add each of these (exact match, no wildcards):
 
 ```
 http://localhost:3000/api/auth/callback/microsoft-entra-id
-https://<production-domain>/api/auth/callback/microsoft-entra-id
+https://northstar.lluh.app/api/auth/callback/microsoft-entra-id
 ```
 
 The path is fixed by the library — it must end in
 `/api/auth/callback/microsoft-entra-id`.
 
 **Note on Vercel previews:** every preview deployment gets a unique generated
-hostname, and Entra requires exact redirect URIs. Rather than registering a URI
-per deploy, we will pin the app to one stable domain (a Vercel production domain
-or a fixed preview alias) and give you that hostname. One production URI is
-enough.
+hostname, and Entra requires exact redirect URIs. The app is pinned to the stable
+domain `northstar.lluh.app`, so the two URIs above are all that is needed — no URI
+per deploy, and no changes required when we redeploy.
 
 **Front-channel logout URL** (optional, enables clean sign-out):
 ```
-https://<production-domain>/api/auth/signout
+https://northstar.lluh.app/api/auth/signout
 ```
 
 ## 3. API permissions

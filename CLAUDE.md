@@ -19,9 +19,10 @@ Claude Code reads this at the start of every session.
 - Tailwind CSS v4, ESLint
 - `src/` directory, import alias `@/*`
 - Package manager: **npm** (do not mix in pnpm/yarn)
-- Hosting: Vercel
+- Hosting: Vercel, custom domain **northstar.lluh.app**
 - Source control: GitHub
-- Database / auth: none yet
+- Auth: Auth.js v5 (`next-auth@beta`) + Microsoft Entra ID, single tenant
+- Database: none yet
 - Email: none yet
 - Other integrations: none yet
 
@@ -67,6 +68,8 @@ If the **Claude** account is personal rather than LLUH, stop and tell Ryan.
 - [ ] `vercel login` (browser sign-in — confirm the correct account)
 - [ ] `vercel whoami` / `vercel teams ls` — confirm scope
 - [ ] `vercel link` in the project root
+- [ ] Add domain `northstar.lluh.app` (Project → Settings → Domains); add the CNAME it shows
+      at whoever hosts `lluh.app` DNS. TLS is provisioned automatically.
 - [ ] `vercel env pull .env.local`
 - [ ] Confirm `.env*` and `.vercel` are gitignored — **already true in this repo**
 - [ ] Vercel MCP server: `claude mcp add --transport http vercel https://mcp.vercel.com`, then `/mcp` and complete browser sign-in
@@ -82,7 +85,12 @@ Record base URL, auth method, and env var **names** below. Never record secret v
 
 | Variable | Purpose | Where it is set | Notes |
 |---|---|---|---|
-| _(none yet)_ | | | |
+| `AUTH_SECRET` | Auth.js session/JWT signing | `.env.local` + Vercel | `npx auth secret` |
+| `AUTH_MICROSOFT_ENTRA_ID_ID` | Entra Application (client) ID | `.env.local` + Vercel | Not secret |
+| `AUTH_MICROSOFT_ENTRA_ID_TENANT_ID` | Entra Directory (tenant) ID | `.env.local` + Vercel | Not secret |
+| `AUTH_MICROSOFT_ENTRA_ID_SECRET` | Entra client secret | `.env.local` + Vercel | **Secret.** Rotate at POC end |
+
+See `.env.example`. Entra registration request for the Identity team: `docs/entra-setup.md`.
 
 Add with `vercel env add <NAME> <environment>`.
 
@@ -123,6 +131,8 @@ Nothing beyond the default Next.js scaffold yet. Fill in as it develops:
 | 2026-11-17 | Build POC on Vercel + GitHub; Claude Code under LLUH account | Work project |
 | 2026-11-17 | Use Ryan's **personal** Vercel and GitHub for the POC phase | Speed to a working demo; revisit before any real data or wider rollout |
 | 2026-11-17 | Next.js 15 App Router + TypeScript + Tailwind, npm | Default Vercel path; least friction to a deployable demo |
+| 2026-11-17 | Entra ID sign-in via Auth.js v5; `User.Read` scope dropped | Keeps the app registration to the three standard OIDC scopes |
+| 2026-11-17 | Pin to `northstar.lluh.app` rather than per-deploy preview URLs | Entra redirect URIs require exact matches; one stable URI |
 
 ## 10. Open questions for Ryan
 
@@ -130,6 +140,7 @@ Nothing beyond the default Next.js scaffold yet. Fill in as it develops:
 - [ ] Demo date.
 - [ ] Which systems must it connect to, and are sandbox instances available?
 - [ ] Synthetic data sufficient? (Real LLUH data requires approval **and** moving off personal infrastructure.)
-- [ ] Entra ID login: use the **LLUH tenant** (requires an IT app registration) or a **throwaway dev
-      tenant** with synthetic users for the POC? Dev tenant recommended — no IT ticket, and avoids
-      asking LLUH IT to register a corporate app pointing at personal Vercel.
+- [ ] Which Entra tenant — production LLUH or a dev tenant? (Code is identical; three env vars differ.)
+- [ ] Who controls DNS for `lluh.app`, and can they add the CNAME?
+- [ ] `lluh.app` is LLUH-branded but will serve from a **personal** Vercel account during the POC.
+      Confirm that is acceptable, or move the Vercel project to a work-owned team before DNS cutover.
