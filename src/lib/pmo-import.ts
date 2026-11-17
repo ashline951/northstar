@@ -37,7 +37,7 @@ export const PMO_IMPORT_SQL = `
         ('PWalther@llu.edu', 'Walther, Priscilla', 'Member', 'PMO import'),
         ('DWilly@llu.edu', 'Willy, Darlynn', 'Member', 'PMO import'),
         ('AFineganredell@llu.edu', 'Finegan-Redell, Anna', 'Member', 'PMO import')
-      on conflict (email) do nothing
+      on conflict do nothing
 `;
 
 /**

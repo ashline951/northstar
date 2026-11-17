@@ -26,5 +26,5 @@ export const ROSTER_IMPORT_SQL = `
         ('BWalls@llu.edu', 'Walls, Brett', 'Member', 'roster import'),
         ('jwical@llu.edu', 'Wical, John', 'Member', 'roster import'),
         ('dionnewilliams@llu.edu', 'Williams, Dionne', 'Member', 'roster import')
-      on conflict (email) do nothing
+      on conflict do nothing
 `;
