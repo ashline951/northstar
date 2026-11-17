@@ -41,10 +41,10 @@ LLUH is a healthcare organization. Until Ryan confirms otherwise:
 
 ## 4. Account separation
 
-Ryan has approved **personal Vercel and GitHub accounts for the POC phase** (2026-11-17). This is
-conditional: personal infrastructure is outside any LLUH BAA or contract, so the section 3 data rules
-are what keep this compliant. Synthetic data only, no production credentials — no exceptions without
-moving to work-owned infrastructure first.
+Vercel deploys into the work-owned **LLUH POC team**. GitHub remains Ryan's **personal** account
+(`ashline951/northstar`, private) for the POC phase, with CIO backing. Personal GitHub sits outside
+any LLUH BAA, so the section 3 data rules are what keep this compliant: synthetic data only, no
+production credentials, no exceptions without moving the repo to work-owned infrastructure first.
 
 The **Claude Code account must still be the LLUH one**. These checks are client-side and must be run
 locally — a cloud session cannot do them.
@@ -52,7 +52,7 @@ locally — a cloud session cannot do them.
 1. `/status` in Claude Code — confirm the LLUH Claude account. If not: `/logout` then `/login`.
    - Optional isolation: `CLAUDE_CONFIG_DIR=~/.claude-lluh claude`
 2. `vercel whoami` and `vercel teams ls` — the active scope must be **LLUH POC**.
-3. `git config user.email` and `git remote -v` — expect Ryan's personal GitHub for now.
+3. `git remote -v` — expect `ashline951/northstar`.
 
 If the **Claude** account is personal rather than LLUH, stop and tell Ryan.
 
@@ -62,20 +62,21 @@ If the **Claude** account is personal rather than LLUH, stop and tell Ryan.
 - [ ] Node.js LTS (built against v22) — `node -v`
 - [ ] `npm i -g vercel`
 
-### 5.2 GitHub
-- [ ] Create the repo under Ryan's **personal** GitHub account (private)
-- [ ] `git remote add origin <url>` and `git push -u origin main`
-- [ ] Claude GitHub App installed on the personal account (needed for cloud sessions to push)
+### 5.2 GitHub — DONE
+- [x] Private repo `ashline951/northstar` created
+- [x] Remote added, `main` pushed
+- [x] Claude GitHub App installed — cloud sessions can push directly
 
-### 5.3 Vercel
-- [ ] `vercel login` (browser sign-in — confirm the correct account)
-- [ ] `vercel whoami` / `vercel teams ls` — confirm scope
-- [ ] `vercel link --scope "LLUH POC"` in the project root — **must land in the LLUH POC team**,
-      not a personal scope. Check with `vercel teams ls` first and confirm with `vercel project ls`.
-- [ ] Add domain `northstar.lluh.app` (Project → Settings → Domains); add the CNAME it shows
-      at whoever hosts `lluh.app` DNS. TLS is provisioned automatically.
-- [ ] `vercel env pull .env.local`
-- [ ] Confirm `.env*` and `.vercel` are gitignored — **already true in this repo**
+### 5.3 Vercel — Ryan does this in the dashboard (no CLI needed)
+Ryan is not running this app locally. Deployment is git-based: push to `main`, Vercel builds.
+
+- [ ] LLUH POC team → Add New → Project → import `ashline951/northstar`
+- [ ] Add the six environment variables from 5.5 **before the first deploy**
+- [ ] Settings → Domains → add `northstar.lluh.app`; send the CNAME to whoever runs Cloudflare
+      (`docs/northstar-dns-setup.md`)
+- [ ] Note the generated `*.vercel.app` URL and have the Identity team add it as a third redirect
+      URI, so sign-in can be tested without waiting on DNS
+- [x] `.env*` and `.vercel` are gitignored
 - [ ] Vercel MCP server: `claude mcp add --transport http vercel https://mcp.vercel.com`, then `/mcp` and complete browser sign-in
 
 ### 5.4 Other MCP servers — add only what the POC needs
@@ -171,6 +172,7 @@ claim is on. Client secret expires ~2027-05.
 | 2026-11-17 | Next.js 15 App Router + TypeScript + Tailwind, npm | Default Vercel path; least friction to a deployable demo |
 | 2026-11-17 | Entra ID sign-in via Auth.js v5; `User.Read` scope dropped | Keeps the app registration to the three standard OIDC scopes |
 | 2026-11-17 | Pin to `northstar.lluh.app` rather than per-deploy preview URLs | Entra redirect URIs require exact matches; one stable URI |
+| 2026-11-17 | No local development; deploy from GitHub to Vercel only | Ryan's choice. Means the deployed app is the first test, and preview deploys cannot authenticate |
 
 ## 10. Open questions for Ryan
 
