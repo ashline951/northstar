@@ -1,6 +1,7 @@
 import { auth } from "@/auth";
 import AppShell from "@/components/AppShell";
-import { getActiveUser } from "@/lib/users";
+import { lookupUser } from "@/lib/users";
+import ServiceUnavailable from "@/components/ServiceUnavailable";
 import { STATUSES, listItems, listLinks } from "@/lib/project";
 import {
   addItemAction,
@@ -19,7 +20,11 @@ const STATUS_STYLE: Record<string, string> = {
 
 export default async function ProjectPage() {
   const session = await auth();
-  const me = await getActiveUser(session?.user?.email);
+  const lookup = await lookupUser(session?.user?.email);
+
+  if (lookup.status === "unavailable") return <ServiceUnavailable />;
+
+  const me = lookup.status === "ok" ? lookup.user : null;
 
   if (!me?.has_project_access) {
     return (

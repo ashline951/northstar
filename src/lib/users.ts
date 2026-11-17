@@ -24,10 +24,18 @@ export type NorthstarUser = {
  * an authorisation control, even though it means a database problem looks
  * like a login problem.
  */
-export async function getActiveUser(
-  email?: string | null
-): Promise<NorthstarUser | null> {
-  if (!email) return null;
+export type Lookup =
+  /** On the roster and active. */
+  | { status: "ok"; user: NorthstarUser }
+  /** Reached the database; this person is not on the roster. */
+  | { status: "denied" }
+  /** Could not reach the database. Access is still refused, but this is an
+   *  outage, not a decision - and pages should say so rather than telling
+   *  someone they lack a role they actually hold. */
+  | { status: "unavailable" };
+
+export async function lookupUser(email?: string | null): Promise<Lookup> {
+  if (!email) return { status: "denied" };
   // Every authenticated path passes through here, so this is where a deploy's
   // schema changes get applied - no button, no SQL console.
   await ensureMigrated();
@@ -37,11 +45,23 @@ export async function getActiveUser(
       where lower(email) = ${email.toLowerCase()} and is_active = true
       limit 1
     `) as NorthstarUser[];
-    return rows[0] ?? null;
+    return rows[0] ? { status: "ok", user: rows[0] } : { status: "denied" };
   } catch (err) {
     console.error("northstar: access check failed, denying", err);
-    return null;
+    return { status: "unavailable" };
   }
+}
+
+/**
+ * Fails closed: both "not on the roster" and "cannot reach the database"
+ * return null. Use this wherever the only question is whether to allow
+ * something; use lookupUser when the answer is shown to a person.
+ */
+export async function getActiveUser(
+  email?: string | null
+): Promise<NorthstarUser | null> {
+  const result = await lookupUser(email);
+  return result.status === "ok" ? result.user : null;
 }
 
 export async function hasSeenWelcome(email?: string | null): Promise<boolean> {

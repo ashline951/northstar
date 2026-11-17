@@ -3,11 +3,12 @@ import AppShell from "@/components/AppShell";
 import {
   ROLE_MEMBER,
   ROLE_PROJECT_MANAGER,
-  getActiveUser,
   listUsers,
+  lookupUser,
 } from "@/lib/users";
 import { listNotes } from "@/lib/assistant";
 import { migrationState } from "@/lib/migrations";
+import ServiceUnavailable from "@/components/ServiceUnavailable";
 import {
   addNoteAction,
   addUserAction,
@@ -20,7 +21,11 @@ import {
 
 export default async function AdminPage() {
   const session = await auth();
-  const me = await getActiveUser(session?.user?.email);
+  const lookup = await lookupUser(session?.user?.email);
+
+  if (lookup.status === "unavailable") return <ServiceUnavailable />;
+
+  const me = lookup.status === "ok" ? lookup.user : null;
 
   if (!me || me.role !== ROLE_PROJECT_MANAGER) {
     return (
