@@ -239,6 +239,23 @@ redirecting - bouncing to an unvalidated redirect is how an open redirect become
 `/oauth/*` and `/mcp` are excluded from middleware because they authenticate themselves;
 `/oauth/authorize` still calls `auth()` itself.
 
+**Ideas, Demands and Projects are one table, not three.** `northstar_records` holds a `lifecycle`
+(Idea / Demand / Project) that changes in place. Nothing is copied on promotion, so history, title
+and conversation stay with the record - the copying in ServiceNow is what loses them.
+
+- **`suffix` is assigned once and never changes. The number is derived.** Display is
+  `PREFIX[lifecycle] + suffix` (IDEA / DMND / PRJ), and `suffixFromNumber()` strips any prefix, so
+  IDEA2600001 and PRJ2600001 both find the same row. **Do not store the prefixed number or mutate
+  the suffix** - that would recreate the broken-reference problem the single table exists to avoid.
+- Suffix is minted in SQL (`to_char(now(),'YY') || lpad(nextval(...),5,'0')`) so concurrent creates
+  cannot collide. The sequence does not reset annually; the year is a label, not a counter reset.
+- **States belong to a lifecycle** and only that lifecycle's states are offered. The pairing is
+  enforced by a CHECK constraint, not only in the UI, so a bad combination cannot land by any route.
+  `setRecordStateAction` re-reads the lifecycle rather than trusting the form.
+- Promotion is forward only (Idea -> Demand -> Project) and resets state to the new lifecycle's
+  first state. Each move is written to `northstar_record_history`, so "when did this become a
+  project, and who decided" has an answer.
+
 **Test data labels itself.** While `NORTHSTAR_DATA_MODE` is not `live`, every MCP tool that returns
 project content prefixes it with a banner saying it is POC test data, and the server's `initialize`
 instructions tell Claude not to retain it or carry it between conversations. The reason is Ryan's:
@@ -266,6 +283,8 @@ Claude admin console, not here.
 | 2026-11-17 | Access control moved from Entra assignment to an in-app allow list | Ryan wants the tenant able to authenticate, with Northstar deciding who gets in |
 | 2026-11-17 | Assistant calls Anthropic directly, not through Vercel AI Gateway | Ryan wants LLUH's own Claude account; the app host and the model provider are independent |
 | 2026-11-17 | Assistant scoped to Northstar only, with a hard PHI refusal | A free-text box in a health system is how PHI leaks by accident |
+| 2026-11-18 | Idea / Demand / Project are one table with a lifecycle field | Ryan's design. Conversion copying is what loses history; one maturing record keeps it |
+| 2026-11-18 | The record number is derived from lifecycle + an immutable suffix | A number that mutates breaks every reference written before it changed |
 | 2026-11-18 | POC project data labels itself as synthetic in every MCP result | A fake project recalled as fact months later is how trust in the assistant dies |
 | 2026-11-18 | Claude connects via MCP with per-user OAuth, not a shared key | Claude must see exactly what the person sees; a service credential would erase the access model |
 | 2026-11-17 | Migrations ship in code and apply themselves on deploy | Pushing code is the whole deployment step; nobody should click a button or open a SQL console |

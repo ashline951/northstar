@@ -4,6 +4,9 @@ import { lookupUser } from "@/lib/users";
 import ServiceUnavailable from "@/components/ServiceUnavailable";
 import { STATUSES, listItems, listLinks } from "@/lib/project";
 import { CAPABILITIES, type Coverage } from "@/lib/capabilities";
+import { listRecords } from "@/lib/records";
+import { listUsers } from "@/lib/users";
+import RecordsBoard from "@/components/RecordsBoard";
 import {
   addItemAction,
   addLinkAction,
@@ -58,7 +61,15 @@ export default async function ProjectPage() {
     );
   }
 
-  const [items, links] = await Promise.all([listItems(), listLinks()]);
+  const [items, links, records, allUsers] = await Promise.all([
+    listItems(),
+    listLinks(),
+    listRecords(),
+    listUsers(),
+  ]);
+  const people = allUsers
+    .filter((u) => u.is_active)
+    .map((u) => ({ email: u.email, display_name: u.display_name }));
   const input =
     "rounded-lg border border-[var(--ns-border-subtle)] bg-[var(--ns-surface-card)] px-3 py-2 text-sm text-[var(--ns-text-primary)]";
 
@@ -177,6 +188,8 @@ export default async function ProjectPage() {
             )}
           </ul>
         </section>
+
+        <RecordsBoard records={records} people={people} />
 
         <section className="mt-14">
           <h2 className="ns-display text-2xl text-[var(--ns-text-primary)]">

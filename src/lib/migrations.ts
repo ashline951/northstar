@@ -123,6 +123,48 @@ export const MIGRATIONS: Migration[] = [
          on northstar_oauth_tokens (user_email)`,
     ],
   },
+  {
+    name: "009_records",
+    statements: [
+      `create sequence if not exists northstar_record_seq start 1`,
+      // The lifecycle/state pairing is enforced here, not only in the UI.
+      // A state belongs to exactly one lifecycle, so the two columns cannot
+      // drift into a combination nobody designed.
+      `create table if not exists northstar_records (
+         id             bigserial primary key,
+         suffix         text not null unique,
+         lifecycle      text not null check (lifecycle in ('Idea', 'Demand', 'Project')),
+         state          text not null,
+         title          text not null,
+         description    text,
+         assigned_to    text,
+         assigned_group text,
+         created_by     text,
+         created_at     timestamptz not null default now(),
+         updated_at     timestamptz not null default now(),
+         constraint northstar_records_state_matches_lifecycle check (
+           (lifecycle = 'Idea'
+             and state in ('Draft', 'Submitted', 'Accepted', 'Idea Closed'))
+           or (lifecycle = 'Demand'
+             and state in ('Draft', 'Submitted', 'Screening', 'Qualified',
+                           'Approved', 'Deferred', 'DMND Closed'))
+           or (lifecycle = 'Project'
+             and state in ('Initiate', 'Plan', 'Execute', 'Monitor/Control',
+                           'Prj Closed'))
+         )
+       )`,
+      `create table if not exists northstar_record_history (
+         id             bigserial primary key,
+         record_id      bigint not null references northstar_records(id) on delete cascade,
+         from_lifecycle text,
+         to_lifecycle   text not null,
+         changed_by     text,
+         changed_at     timestamptz not null default now()
+       )`,
+      `create index if not exists northstar_record_history_record
+         on northstar_record_history (record_id)`,
+    ],
+  },
 ];
 
 export type MigrationState = { name: string; applied_at: string | null };
