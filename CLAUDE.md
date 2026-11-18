@@ -168,6 +168,8 @@ in every action. A server action is a public endpoint; hiding the admin link is 
 | `/project` | Northstar project workspace. `has_project_access` only |
 | `/api/chat` | Northstar assistant. Auth required, re-checked in the route |
 | `/api/auth/*` | Auth.js handlers |
+| `/mcp` | MCP server for Claude. Bearer token, per person |
+| `/oauth/*`, `/.well-known/*` | OAuth 2.1 authorization server for the connector |
 
 **Key decisions baked into the code**
 - **The route guard is `callbacks.authorized` in `src/auth.config.ts`, not the matcher.** Exporting
@@ -222,6 +224,20 @@ the JWT, so a grant takes effect without re-signing in. Backed by **`northstar_t
 are deliberately throwaway** - migrate what is worth keeping when real project management ships, and
 do not build anything else on them. Links are stored and rendered only when `https://`.
 
+**Claude connector (MCP).** Northstar is an OAuth 2.1 authorization server so Claude can connect
+**as the person using it**, not as a service account. `/oauth/authorize` requires a live Northstar
+session, so a token is minted against a named person who already passed the roster check; every MCP
+tool then re-checks that person with `lookupUser` and the same rules the pages use. **Never add a
+shared API key or service credential to this path** - one would let Claude see everything regardless
+of who asked, and the access model would stop meaning anything.
+
+Details worth keeping: PKCE S256 is required and `plain` is refused; codes and tokens are stored
+only as SHA-256 hashes; codes are single-use and replay revokes the tokens minted from them; refresh
+tokens rotate. An unknown client or unregistered redirect URI fails **in place** rather than
+redirecting - bouncing to an unvalidated redirect is how an open redirect becomes a stolen code.
+`/oauth/*` and `/mcp` are excluded from middleware because they authenticate themselves;
+`/oauth/authorize` still calls `auth()` itself.
+
 **Not built, deliberately**
 - Real project management (the `/project` page is a stop-gap, not the product)
 - Entra security groups - roles are in-app only
@@ -239,6 +255,7 @@ do not build anything else on them. Links are stored and rendered only when `htt
 | 2026-11-17 | Access control moved from Entra assignment to an in-app allow list | Ryan wants the tenant able to authenticate, with Northstar deciding who gets in |
 | 2026-11-17 | Assistant calls Anthropic directly, not through Vercel AI Gateway | Ryan wants LLUH's own Claude account; the app host and the model provider are independent |
 | 2026-11-17 | Assistant scoped to Northstar only, with a hard PHI refusal | A free-text box in a health system is how PHI leaks by accident |
+| 2026-11-18 | Claude connects via MCP with per-user OAuth, not a shared key | Claude must see exactly what the person sees; a service credential would erase the access model |
 | 2026-11-17 | Migrations ship in code and apply themselves on deploy | Pushing code is the whole deployment step; nobody should click a button or open a SQL console |
 | 2026-11-17 | `/project` workspace on throwaway `northstar_tmp_*` tables | Run the project now; migrate later rather than guessing the real model today |
 | 2026-11-17 | Project visibility is a flag, not a role | Who administers access and who is on the project are different questions |

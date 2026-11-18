@@ -89,6 +89,40 @@ export const MIGRATIONS: Migration[] = [
     name: "007_assistant_team_notes",
     statements: [ASSISTANT_TEAM_NOTES_SQL],
   },
+  {
+    name: "008_oauth",
+    statements: [
+      `create table if not exists northstar_oauth_clients (
+         client_id     text primary key,
+         client_name   text,
+         redirect_uris text[] not null,
+         created_at    timestamptz not null default now()
+       )`,
+      `create table if not exists northstar_oauth_codes (
+         code_hash      text primary key,
+         client_id      text not null,
+         user_email     text not null,
+         redirect_uri   text not null,
+         code_challenge text not null,
+         scope          text,
+         used           boolean not null default false,
+         expires_at     timestamptz not null,
+         created_at     timestamptz not null default now()
+       )`,
+      `create table if not exists northstar_oauth_tokens (
+         token_hash text primary key,
+         kind       text not null check (kind in ('access', 'refresh')),
+         client_id  text not null,
+         user_email text not null,
+         scope      text,
+         revoked    boolean not null default false,
+         expires_at timestamptz not null,
+         created_at timestamptz not null default now()
+       )`,
+      `create index if not exists northstar_oauth_tokens_user
+         on northstar_oauth_tokens (user_email)`,
+    ],
+  },
 ];
 
 export type MigrationState = { name: string; applied_at: string | null };
