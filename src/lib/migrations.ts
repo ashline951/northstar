@@ -174,6 +174,36 @@ export const MIGRATIONS: Migration[] = [
          on northstar_records (lifecycle, is_active)`,
     ],
   },
+  {
+    name: "011_nav_favorites_history",
+    statements: [
+      // Favourites are per person and live on the server, not the browser, so
+      // they follow someone between computers.
+      `create table if not exists northstar_nav_favorites (
+         id         bigserial primary key,
+         user_email text not null,
+         label      text not null,
+         href       text not null,
+         position   integer not null default 0,
+         created_at timestamptz not null default now()
+       )`,
+      `create index if not exists northstar_nav_favorites_user
+         on northstar_nav_favorites (lower(user_email), position)`,
+      // One row per page per person: revisiting updates the timestamp rather
+      // than filling the list with the same page.
+      `create table if not exists northstar_nav_history (
+         id         bigserial primary key,
+         user_email text not null,
+         label      text not null,
+         href       text not null,
+         visited_at timestamptz not null default now()
+       )`,
+      `create unique index if not exists northstar_nav_history_user_href
+         on northstar_nav_history (lower(user_email), href)`,
+      `create index if not exists northstar_nav_history_recent
+         on northstar_nav_history (lower(user_email), visited_at desc)`,
+    ],
+  },
 ];
 
 export type MigrationState = { name: string; applied_at: string | null };

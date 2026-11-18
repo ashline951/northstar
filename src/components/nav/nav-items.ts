@@ -49,7 +49,7 @@ const recordGroups: NavItem[] = VIEW_GROUPS.map((g) => ({
 export const NAV_ITEMS: NavItem[] = [
   { title: "Home", href: "/", icon: House },
   {
-    title: "Project Portfolio Management",
+    title: "Project Management",
     href: `/records/${VIEW_GROUPS[0].views[0].key}`,
     icon: Layers,
     children: recordGroups,

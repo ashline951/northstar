@@ -263,10 +263,16 @@ and conversation stay with the record - the copying in ServiceNow is what loses 
 cannot drift apart. `northstar_records.is_active` is the flag: `activeOnly: false` returns active
 and inactive together, which is what "All Demands" means.
 
-**The list view itself is not built yet, on purpose.** Ryan is supplying the house pattern for list
-views. It drops into `/records/[view]/page.tsx`, where `records` is already filtered and `view`
-carries the definition. The placeholder there reports the row count so the wiring is visibly
-working. Do not invent a list view before that file arrives.
+**The list view is specified but not built.** `docs/standards/list-view.md` is the LLUH standard,
+written from the CS Tracker build: one shared list view driven by a registry, column chooser,
+per-column search operators, AND/OR/NOT filter builder, group by, breadcrumbs, saved views and
+filters, CSV export, and the ✨ AI assistant. **Read it before building the list view.** It drops
+into `/records/[view]/page.tsx`, where `records` is already filtered and `view` carries the
+definition; the placeholder there reports the row count so the wiring is visibly working.
+
+Two rules from that standard are non-negotiable and easy to get wrong: **every AI answer's numbers
+come from a real query, never from the model reading rows**, and **columns marked private never
+reach the model, by any tool, for any reason**.
 
 **The navigator follows `docs/standards/left-navigator.md`** - the LLUH app standard, copied in from
 cs-tracker. Sizes, type, states and behaviour come from there; only the brand colour is per-app.
