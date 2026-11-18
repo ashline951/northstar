@@ -29,7 +29,7 @@ export default async function AppShell({
 
   return (
     <div className="flex min-h-screen flex-col">
-      <header className="sticky top-0 z-50 border-b border-black/10 bg-[var(--ns-bg-midnight)]">
+      <header className="sticky top-0 z-50 border-b border-white/10 bg-[var(--ns-bg-midnight)] shadow-sm">
         <div className="flex h-16 w-full items-center justify-between gap-4 px-5 sm:px-8">
           <Link href="/" className="flex items-center gap-3" aria-label="Northstar home">
             <Image

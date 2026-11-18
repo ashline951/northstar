@@ -28,9 +28,12 @@
    "system" and the OS prefers dark. The data-theme attribute is set before
    paint by the inline script in layout.tsx to avoid a flash. */
 :root[data-theme="dark"] {
-  --ns-surface-page: #0b132b;
-  --ns-surface-card: #1c2541;
-  --ns-border-subtle: #2d3a5c;
+  /* Three distinct levels, darkest at the top: the banner stays at
+     --ns-bg-midnight (#0b132b), the page sits above it, cards above that.
+     Page and banner were both #0b132b, which merged them into one field. */
+  --ns-surface-page: #151d36;
+  --ns-surface-card: #1f2845;
+  --ns-border-subtle: #33406a;
   --ns-text-primary: #f8fafc;
   --ns-text-secondary: #a8b3c7;
 }
