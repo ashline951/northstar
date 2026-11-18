@@ -263,16 +263,19 @@ and conversation stay with the record - the copying in ServiceNow is what loses 
 cannot drift apart. `northstar_records.is_active` is the flag: `activeOnly: false` returns active
 and inactive together, which is what "All Demands" means.
 
-**The list view is specified but not built.** `docs/standards/list-view.md` is the LLUH standard,
-written from the CS Tracker build: one shared list view driven by a registry, column chooser,
+**The list view is specified but not built.** `docs/standards/list-view.md` (v1.1) is the LLUH
+standard, written from the CS Tracker build, checked against its code, and kept in cs-tracker (re-copy
+it here when it changes). Its Appendix A holds the full reference code to start from: one shared list view driven by a registry, column chooser,
 per-column search operators, AND/OR/NOT filter builder, group by, breadcrumbs, saved views and
 filters, CSV export, and the ✨ AI assistant. **Read it before building the list view.** It drops
 into `/records/[view]/page.tsx`, where `records` is already filtered and `view` carries the
 definition; the placeholder there reports the row count so the wiring is visibly working.
 
 Two rules from that standard are non-negotiable and easy to get wrong: **every AI answer's numbers
-come from a real query, never from the model reading rows**, and **columns marked private never
-reach the model, by any tool, for any reason**.
+come from a real query, never from the model reading rows**, and **nothing from a column marked
+private reaches the model, by any route** - not tool results, and not the description of the
+person's current filter and searches (strip private conditions and searches first; CS Tracker had
+this gap until v1.1 of the standard).
 
 **The navigator follows `docs/standards/left-navigator.md` (v1.3)** - the LLUH app standard, copied
 in from cs-tracker (re-copy it when cs-tracker updates it). Sizes, type, states, wording and behaviour
@@ -341,6 +344,7 @@ Claude admin console, not here.
 | 2026-11-18 | Navigator built to `docs/standards/left-navigator.md`, with navy as the light-mode nav primary | Gold measures 1.77:1 against the standard's 4.5:1 requirement |
 | 2026-11-18 | Navigator brought up to standard v1.3: tabs, favourites, history, drag-to-resize, standard drawer | Ryan asked for Northstar to match the CS Tracker navigator, including the new features |
 | 2026-11-18 | Navigator width: 240px default, people drag it from 200 to 400px | Ryan first asked for wider, then chose resizable with the original default |
+| 2026-11-18 | List view standard v1.1 copied from cs-tracker, its home | Checked against the CS Tracker code, with full reference code; cs-tracker keeps the master copy |
 | 2026-11-18 | Project Portfolio Management is the top-level application in the nav | Northstar is a project code name; PPM is the product, and will sit beside others on a larger platform |
 | 2026-11-18 | List views are defined in one registry and rendered from it | Nav, heading and query come from one definition, so they cannot disagree |
 | 2026-11-18 | Idea / Demand / Project are one table with a lifecycle field | Ryan's design. Conversion copying is what loses history; one maturing record keeps it |
