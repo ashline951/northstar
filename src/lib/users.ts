@@ -83,8 +83,24 @@ export async function markWelcomeSeen(email?: string | null): Promise<void> {
 }
 
 export async function listUsers(): Promise<NorthstarUser[]> {
+  // Sorted by surname. Display names are stored "Last, First", so ordering on
+  // display_name is already a surname sort; split on the comma so a name
+  // stored "First Last" still files under the last word rather than the first.
+  // Removed people sink to the bottom. Anyone without a name falls back to
+  // their email.
   return (await sql`
-    select * from northstar_users order by is_active desc, lower(email)
+    select * from northstar_users
+    order by
+      is_active desc,
+      lower(
+        case
+          when display_name is null or display_name = '' then email
+          when position(',' in display_name) > 0
+            then split_part(display_name, ',', 1)
+          else reverse(split_part(reverse(display_name), ' ', 1))
+        end
+      ),
+      lower(coalesce(display_name, email))
   `) as NorthstarUser[];
 }
 
