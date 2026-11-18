@@ -165,6 +165,15 @@ export const MIGRATIONS: Migration[] = [
          on northstar_record_history (record_id)`,
     ],
   },
+  {
+    name: "010_record_active_flag",
+    statements: [
+      `alter table northstar_records
+         add column if not exists is_active boolean not null default true`,
+      `create index if not exists northstar_records_lifecycle_active
+         on northstar_records (lifecycle, is_active)`,
+    ],
+  },
 ];
 
 export type MigrationState = { name: string; applied_at: string | null };

@@ -52,6 +52,7 @@ export type NorthstarRecord = {
   description: string | null;
   assigned_to: string | null;
   assigned_group: string | null;
+  is_active: boolean;
   created_by: string | null;
   created_at: string;
   updated_at: string;
@@ -199,4 +200,30 @@ export async function historyFor(id: number): Promise<HistoryRow[]> {
     select * from northstar_record_history
     where record_id = ${id} order by changed_at
   `) as HistoryRow[];
+}
+
+/**
+ * The query behind every list view. `activeOnly: false` returns active and
+ * inactive together, which is what "All Demands" means.
+ */
+export async function listByView(
+  lifecycle: Lifecycle,
+  activeOnly: boolean
+): Promise<NorthstarRecord[]> {
+  return (await sql`
+    select * from northstar_records
+    where lifecycle = ${lifecycle}
+      and (${activeOnly} = false or is_active = true)
+    order by suffix desc
+  `) as NorthstarRecord[];
+}
+
+export async function setRecordActive(
+  id: number,
+  active: boolean
+): Promise<void> {
+  await sql`
+    update northstar_records set is_active = ${active}, updated_at = now()
+    where id = ${id}
+  `;
 }

@@ -5,6 +5,7 @@ import { getActiveUser } from "@/lib/users";
 import UserMenu from "./UserMenu";
 import WelcomeGate from "./WelcomeGate";
 import Assistant from "./Assistant";
+import SideNav from "./SideNav";
 
 export default async function AppShell({
   children,
@@ -70,7 +71,16 @@ export default async function AppShell({
         </div>
       </header>
 
-      <main className="flex-1">{children}</main>
+      {/* The left navigation is part of the shell for people on the project;
+          everyone else gets the plain single-column layout. */}
+      {canSeeProject ? (
+        <div className="flex flex-1 flex-col md:flex-row">
+          <SideNav />
+          <main className="min-w-0 flex-1">{children}</main>
+        </div>
+      ) : (
+        <main className="flex-1">{children}</main>
+      )}
 
       {user && (
         <>

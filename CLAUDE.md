@@ -167,6 +167,7 @@ in every action. A server action is a public endpoint; hiding the admin link is 
 | `/not-authorized` | Public. Authenticated but not on the allow list |
 | `/admin` | Access, assistant notes, project access, migrations. Project managers only |
 | `/project` | Northstar project workspace. `has_project_access` only |
+| `/records/[view]` | List views from `src/lib/views.ts`. `has_project_access` only |
 | `/api/chat` | Northstar assistant. Auth required, re-checked in the route |
 | `/api/auth/*` | Auth.js handlers |
 | `/mcp` | MCP server for Claude. Bearer token, per person |
@@ -256,6 +257,17 @@ and conversation stay with the record - the copying in ServiceNow is what loses 
   first state. Each move is written to `northstar_record_history`, so "when did this become a
   project, and who decided" has an answer.
 
+**List views are a registry, not routes.** `src/lib/views.ts` defines each view as a named filter
+(lifecycle + `activeOnly`); `SideNav` renders the navigation from it and `/records/[view]` resolves
+the key and runs `listByView`. Adding a view is one entry - the nav, the heading and the query
+cannot drift apart. `northstar_records.is_active` is the flag: `activeOnly: false` returns active
+and inactive together, which is what "All Demands" means.
+
+**The list view itself is not built yet, on purpose.** Ryan is supplying the house pattern for list
+views. It drops into `/records/[view]/page.tsx`, where `records` is already filtered and `view`
+carries the definition. The placeholder there reports the row count so the wiring is visibly
+working. Do not invent a list view before that file arrives.
+
 **Test data labels itself.** While `NORTHSTAR_DATA_MODE` is not `live`, every MCP tool that returns
 project content prefixes it with a banner saying it is POC test data, and the server's `initialize`
 instructions tell Claude not to retain it or carry it between conversations. The reason is Ryan's:
@@ -283,6 +295,7 @@ Claude admin console, not here.
 | 2026-11-17 | Access control moved from Entra assignment to an in-app allow list | Ryan wants the tenant able to authenticate, with Northstar deciding who gets in |
 | 2026-11-17 | Assistant calls Anthropic directly, not through Vercel AI Gateway | Ryan wants LLUH's own Claude account; the app host and the model provider are independent |
 | 2026-11-17 | Assistant scoped to Northstar only, with a hard PHI refusal | A free-text box in a health system is how PHI leaks by accident |
+| 2026-11-18 | List views are defined in one registry and rendered from it | Nav, heading and query come from one definition, so they cannot disagree |
 | 2026-11-18 | Idea / Demand / Project are one table with a lifecycle field | Ryan's design. Conversion copying is what loses history; one maturing record keeps it |
 | 2026-11-18 | The record number is derived from lifecycle + an immutable suffix | A number that mutates breaks every reference written before it changed |
 | 2026-11-18 | POC project data labels itself as synthetic in every MCP result | A fake project recalled as fact months later is how trust in the assistant dies |
