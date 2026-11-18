@@ -9,7 +9,9 @@ export default async function Home() {
   return (
     <AppShell>
       <div className="mx-auto flex max-w-6xl flex-col items-center px-6 py-10 text-center sm:py-14">
-        <h1 className="ns-display text-2xl text-[var(--ns-text-primary)] sm:text-3xl">
+        {/* Right-aligned to the hero's edge: centred above a full-width image
+            it read as a stray caption. */}
+        <h1 className="ns-display w-full pr-1 text-right text-2xl text-[var(--ns-text-primary)] sm:text-3xl">
           {first ? `Welcome, ${first}` : "Welcome"}
         </h1>
 
