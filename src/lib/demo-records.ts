@@ -21,7 +21,7 @@ export const DEMO_RECORDS_SQL = `
         ('Retire the shared PMO mailbox', 'Idea', 'Accepted', 'EHossain@llu.edu', 'Apps: Cardiology', true),
         ('Auto-draft business cases from a short description', 'Idea', 'Idea Closed', 'DSeverson@llu.edu', 'LLU IS Desktop Support', false),
         ('Flag projects competing for the same people', 'Idea', 'Idea Closed', 'rtinnelly@llu.edu', 'Apps: ADT/Registration', false),
-        ('Benefits check-in six months after go-live', 'Idea', 'Idea Closed', 'EHossain@llu.edu', 'IS Project Management Office', true),
+        ('Benefits check-in six months after go-live', 'Idea', 'Idea Closed', 'EHossain@llu.edu', 'IS Project Management Office', false),
         ('One view of every Epic-touching project', 'Idea', 'Draft', 'eellis@llu.edu', 'Patient Safety and Reliability', true),
         ('Replace the weekly status spreadsheet', 'Idea', 'Accepted', 'eellis@llu.edu', 'Apps: ADT/Registration', true),
         ('Standard intake questions per application area', 'Idea', 'Idea Closed', 'GOngsioco@llu.edu', 'Business Process Management', false),
@@ -46,7 +46,7 @@ export const DEMO_RECORDS_SQL = `
         ('Research data warehouse scoping', 'Demand', 'Deferred', 'CriscianeTran@llu.edu', 'Apps: ADT/Registration', true),
         ('Credentialing workflow automation', 'Demand', 'DMND Closed', 'DWilly@llu.edu', 'LLU IS Desktop Support', false),
         ('Bed management dashboard consolidation', 'Demand', 'Qualified', 'TBrinkley@llu.edu', 'IS Project Management Office', false),
-        ('Secure file transfer replacement', 'Demand', 'DMND Closed', 'AFineganredell@llu.edu', 'Business Process Management', true),
+        ('Secure file transfer replacement', 'Demand', 'DMND Closed', 'AFineganredell@llu.edu', 'Business Process Management', false),
         ('Vendor remote access review', 'Demand', 'DMND Closed', 'MarissaForte@llu.edu', 'LLU IS Administrative Systems', false),
         ('Northstar portfolio management proof of concept', 'Project', 'Monitor/Control', 'dpharris@llu.edu', 'LLU IS Desktop Support', true),
         ('Central Services tracker replacement', 'Project', 'Prj Closed', 'EHossain@llu.edu', 'Business Process Management', false),
@@ -75,7 +75,7 @@ export const DEMO_RECORDS_SQL = `
         ('Enterprise imaging viewer rollout', 'Project', 'Execute', 'jmgrove@llu.edu', 'LLU IS Technical Services', true),
         ('Nursing documentation flowsheet redesign', 'Project', 'Execute', 'jmgrove@llu.edu', 'Apps: ADT/Registration', true),
         ('Population health registry build', 'Project', 'Monitor/Control', 'MHernand@llu.edu', 'LLU IS Desktop Support', false),
-        ('Interpreter services scheduling', 'Project', 'Prj Closed', 'DWilly@llu.edu', 'Business Process Management', true)
+        ('Interpreter services scheduling', 'Project', 'Prj Closed', 'DWilly@llu.edu', 'Business Process Management', false)
       ) as v(title, lifecycle, state, assigned_to, assigned_group, is_active)
       where not exists (
         select 1 from northstar_records where created_by = 'demo seed'

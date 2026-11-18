@@ -174,8 +174,13 @@ export function applyQuery<Row>(
 }
 
 export function toCsv<Row>(def: ListDef<Row>, rows: Row[]): string {
-  const esc = (v: string) =>
-    /[",\n]/.test(v) ? `"${v.replaceAll('"', '""')}"` : v;
+  const esc = (v: string) => {
+    // Titles are free text. A cell opening with = + - or @ is run as a formula
+    // by Excel and Sheets, so a record titled =HYPERLINK(...) would execute on
+    // whoever opens the export. A leading apostrophe makes it literal text.
+    const safe = /^[=+\-@\t\r]/.test(v) ? `'${v}` : v;
+    return /[",\n]/.test(safe) ? `"${safe.replaceAll('"', '""')}"` : safe;
+  };
   const head = def.columns.map((c) => esc(c.label)).join(",");
   const body = rows.map((r) =>
     def.columns.map((c) => esc(c.value(r))).join(",")

@@ -139,7 +139,7 @@ export default function ListView({
 
       <div aria-live="polite" className="sr-only">
         {filtered
-          ? `${total} of ${noun} match`
+          ? `${total} ${noun} match your search`
           : `${total} ${noun}`}
       </div>
 
