@@ -3,23 +3,40 @@ import { notFound } from "next/navigation";
 import { auth } from "@/auth";
 import AppShell from "@/components/AppShell";
 import ServiceUnavailable from "@/components/ServiceUnavailable";
+import ListView from "@/components/list-view/list-view";
 import { lookupUser } from "@/lib/users";
 import { listByView } from "@/lib/records";
-import { VIEWS, viewByKey } from "@/lib/views";
+import { RECORDS_LIST } from "@/lib/list-view/registry";
+import {
+  applyQuery,
+  parseQuery,
+  toSearchParams,
+  wireColumns,
+  wireRows,
+} from "@/lib/list-view/types";
+import { viewByKey } from "@/lib/views";
 
-export async function generateMetadata({ params }: { params: Promise<{ view: string }> }): Promise<Metadata> {
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ view: string }>;
+}): Promise<Metadata> {
   const view = viewByKey((await params).view);
   return { title: view?.label ?? "Records" };
 }
 
-export function generateStaticParams() {
-  return VIEWS.map((v) => ({ view: v.key }));
-}
+// Per-person data behind an authorization check: never prerender this, and so
+// no generateStaticParams. Without it the build labels the route SSG, which is
+// one refactor away from being true, and a cached list view would be the wrong
+// person's rows.
+export const dynamic = "force-dynamic";
 
 export default async function RecordListPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ view: string }>;
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
   const { view: key } = await params;
   const view = viewByKey(key);
@@ -27,7 +44,9 @@ export default async function RecordListPage({
 
   const session = await auth();
   const lookup = await lookupUser(session?.user?.email);
+
   if (lookup.status === "unavailable") return <ServiceUnavailable />;
+
   const me = lookup.status === "ok" ? lookup.user : null;
 
   if (!me?.has_project_access) {
@@ -45,38 +64,32 @@ export default async function RecordListPage({
     );
   }
 
-  const records = await listByView(view.lifecycle, view.activeOnly);
+  // The view fixes the lifecycle and the active filter; the URL supplies sort,
+  // per-column search and paging, re-validated against the registry.
+  const all = await listByView(view.lifecycle, view.activeOnly);
+  const query = parseQuery(RECORDS_LIST, await searchParams);
+  const matched = applyQuery(RECORDS_LIST, all, query);
+  const page = matched.slice(
+    (query.page - 1) * query.perPage,
+    query.page * query.perPage
+  );
+
+  const exportParams = toSearchParams(RECORDS_LIST, query);
+  exportParams.delete("page");
+  exportParams.delete("per");
 
   return (
     <AppShell>
-      <div className="px-6 py-10">
-        <h1 className="ns-display text-3xl text-[var(--ns-text-primary)]">
-          {view.title}
-        </h1>
-        <p className="mt-2 text-sm text-[var(--ns-text-secondary)]">
-          {view.description} — {records.length}{" "}
-          {records.length === 1 ? "record" : "records"}.
-        </p>
-
-        {/*
-          The list view itself is deliberately not built yet. Ryan is supplying
-          the house pattern for list views; it drops in here, rendering
-          `records` with the filter already applied by `view`.
-        */}
-        <div className="mt-8 rounded-xl border border-dashed border-[var(--ns-border-subtle)] p-8 text-center">
-          <p className="text-sm font-medium text-[var(--ns-text-primary)]">
-            List view not built yet
-          </p>
-          <p className="mx-auto mt-2 max-w-md text-sm text-[var(--ns-text-secondary)]">
-            The filter is wired and this view has{" "}
-            <strong>{records.length}</strong>{" "}
-            {view.activeOnly ? "active " : ""}
-            {view.lifecycle.toLowerCase()}
-            {records.length === 1 ? "" : "s"} to show. Waiting on the list view
-            pattern before rendering them.
-          </p>
-        </div>
-      </div>
+      <ListView
+        columns={wireColumns(RECORDS_LIST)}
+        rows={wireRows(RECORDS_LIST, page)}
+        noun={RECORDS_LIST.noun}
+        total={matched.length}
+        query={query}
+        title={view.title}
+        description={view.description}
+        exportHref={`/api/records/${view.key}/export?${exportParams.toString()}`}
+      />
     </AppShell>
   );
 }

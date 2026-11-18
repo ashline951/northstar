@@ -1,6 +1,7 @@
 import { sql } from "./db";
 import { ROSTER_IMPORT_SQL } from "./roster-import";
 import { CORE_TEAM_GRANT_SQL, PMO_IMPORT_SQL } from "./pmo-import";
+import { DEMO_RECORDS_SQL } from "./demo-records";
 import { ASSISTANT_TEAM_NOTES_SQL } from "./assistant-notes-seed";
 
 /**
@@ -224,6 +225,10 @@ export const MIGRATIONS: Migration[] = [
          on northstar_nav_history (lower(user_email), path)`,
       `alter table northstar_nav_history alter column path set not null`,
     ],
+  },
+  {
+    name: "013_demo_records",
+    statements: [DEMO_RECORDS_SQL],
   },
 ];
 
