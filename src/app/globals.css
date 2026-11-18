@@ -18,6 +18,16 @@
   --ns-text-secondary: #475569;
   --ns-text-inverse: #f8fafc;
 
+  /* Navigator (docs/standards/left-navigator.md).
+     --ns-nav-primary marks "where you are" and must clear 4.5:1 on the
+     navigator background AND on its own 10% tint. Measured: gold is 1.77:1 in
+     light mode, so light mode uses the palette's darker shade (navy, 7.41:1)
+     and dark mode uses gold (7.36:1). Do not substitute gold in light mode. */
+  --ns-nav-bg: #f6f2ea;
+  --ns-nav-primary: #3a506b;
+  --ns-nav-primary-tint: #e8e9ea;
+  --ns-nav-hover: rgba(11, 19, 43, 0.05);
+
   /* Typography */
   --ns-font-display: 'Palatino Linotype', Palatino, Georgia, 'Times New Roman', serif;
   --ns-font-sans: var(--ns-font-sans-loaded), 'Open Sans', -apple-system,
@@ -36,6 +46,11 @@
   --ns-border-subtle: #33406a;
   --ns-text-primary: #f8fafc;
   --ns-text-secondary: #a8b3c7;
+
+  --ns-nav-bg: #1a2340;
+  --ns-nav-primary: #f9a825;
+  --ns-nav-primary-tint: #2a2c3f;
+  --ns-nav-hover: rgba(255, 255, 255, 0.06);
 }
 
 @theme inline {
@@ -63,3 +78,8 @@ body {
 .ns-display {
   font-family: var(--ns-font-display);
 }
+
+/* The collapsed navigator is a width change on a wrapper, driven by a
+   data attribute on <html> that an inline script sets before first paint.
+   Doing it in CSS rather than React means no flicker on load. */
+@custom-variant nav-closed (:where(html[data-nav="closed"]) &);

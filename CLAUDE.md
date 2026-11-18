@@ -268,12 +268,25 @@ views. It drops into `/records/[view]/page.tsx`, where `records` is already filt
 carries the definition. The placeholder there reports the row count so the wiring is visibly
 working. Do not invent a list view before that file arrives.
 
-**Navigation follows the cs-tracker pattern.** `nav-items.ts` is the registry, `side-nav.tsx`
-renders it recursively, so nesting can go deeper without touching the component. Groups open when
-the current page is inside them; the current page carries a gold inset bar. **Project Portfolio
-Management is the application and sits at the top**, with Ideas, Demands and Projects beneath it.
-Northstar is the code name of the project building PPM, so `/project` sits alongside rather than
-under it - when PPM joins a larger platform, other applications become siblings of that entry.
+**The navigator follows `docs/standards/left-navigator.md`** - the LLUH app standard, copied in from
+cs-tracker. Sizes, type, states and behaviour come from there; only the brand colour is per-app.
+Read it before changing the navigator.
+
+- **`--ns-nav-primary` is navy in light mode, gold in dark.** The standard requires the
+  current-page colour to clear 4.5:1 on the navigator background and on its own 10% tint. Measured:
+  gold is **1.77:1** on the light background and teal 4.14:1 - both fail. Navy is 7.41:1 light, gold
+  7.36:1 dark. **Do not "fix" the navigator by putting gold back in light mode.**
+- `nav-items.ts` is the registry; `side-nav.tsx` renders it recursively. Record groups come from
+  `views.ts`, so a new view appears in the nav automatically.
+- Collapse state is in `localStorage` under `northstar:nav` and applied by an inline script in
+  `layout.tsx` **before paint**, via the `nav-closed:` variant - no flicker on load.
+- **Rows need `min-w-0` on the `ul`, the `li` and the label.** Flex and grid children default to
+  `min-width: auto`, so without all three the label runs past the 240px column and pushes the
+  chevron out of sight. It looks fine until a label is long.
+- **Deviation from the standard:** it allows one level of nesting; Northstar has two
+  (PPM -> Ideas -> Active Ideas). Ryan asked for PPM at the top with the lifecycles beneath.
+  Flagged, not yet decided.
+- **Not built yet:** the Menu/Favorites tabs and per-person favourites, which need server storage.
 
 **Test data labels itself.** While `NORTHSTAR_DATA_MODE` is not `live`, every MCP tool that returns
 project content prefixes it with a banner saying it is POC test data, and the server's `initialize`
@@ -302,6 +315,7 @@ Claude admin console, not here.
 | 2026-11-17 | Access control moved from Entra assignment to an in-app allow list | Ryan wants the tenant able to authenticate, with Northstar deciding who gets in |
 | 2026-11-17 | Assistant calls Anthropic directly, not through Vercel AI Gateway | Ryan wants LLUH's own Claude account; the app host and the model provider are independent |
 | 2026-11-17 | Assistant scoped to Northstar only, with a hard PHI refusal | A free-text box in a health system is how PHI leaks by accident |
+| 2026-11-18 | Navigator built to `docs/standards/left-navigator.md`, with navy as the light-mode nav primary | Gold measures 1.77:1 against the standard's 4.5:1 requirement |
 | 2026-11-18 | Project Portfolio Management is the top-level application in the nav | Northstar is a project code name; PPM is the product, and will sit beside others on a larger platform |
 | 2026-11-18 | List views are defined in one registry and rendered from it | Nav, heading and query come from one definition, so they cannot disagree |
 | 2026-11-18 | Idea / Demand / Project are one table with a lifecycle field | Ryan's design. Conversion copying is what loses history; one maturing record keeps it |

@@ -23,6 +23,18 @@ export const metadata: Metadata = {
 
 /** Applies the saved theme before first paint so there is no light-to-dark
  *  flash. Mirrors the logic in ThemeToggle. */
+/** Applies the saved navigator state before first paint, so a collapsed rail
+ *  does not flash open on load. Pairs with the nav-closed: variant. */
+const navScript = `
+(function () {
+  try {
+    if (localStorage.getItem("northstar:nav") === "closed") {
+      document.documentElement.setAttribute("data-nav", "closed");
+    }
+  } catch (e) {}
+})();
+`;
+
 const themeScript = `
 (function () {
   try {
@@ -43,6 +55,7 @@ export default function RootLayout({
     <html lang="en" suppressHydrationWarning>
       <head>
         <script dangerouslySetInnerHTML={{ __html: themeScript }} />
+        <script dangerouslySetInnerHTML={{ __html: navScript }} />
       </head>
       <body
         className={openSans.variable}

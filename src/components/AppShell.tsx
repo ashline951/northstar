@@ -6,6 +6,7 @@ import UserMenu from "./UserMenu";
 import WelcomeGate from "./WelcomeGate";
 import Assistant from "./Assistant";
 import SideNav from "./nav/side-nav";
+import MobileNav from "./nav/mobile-nav";
 
 export default async function AppShell({
   children,
@@ -32,6 +33,10 @@ export default async function AppShell({
     <div className="flex min-h-screen flex-col">
       <header className="sticky top-0 z-50 border-b border-white/10 bg-[var(--ns-bg-midnight)] shadow-sm">
         <div className="flex h-16 w-full items-center justify-between gap-4 px-5 sm:px-8">
+          {canSeeProject && (
+            <MobileNav showAdmin={record?.role === "Project Manager"} />
+          )}
+
           <Link href="/" className="flex items-center gap-3" aria-label="Northstar home">
             <Image
               src="/brand/northstar-icon.svg"
@@ -74,8 +79,10 @@ export default async function AppShell({
       {/* The left navigation is part of the shell for people on the project;
           everyone else gets the plain single-column layout. */}
       {canSeeProject ? (
-        <div className="flex flex-1 flex-col md:flex-row">
-          <aside className="shrink-0 border-b border-[var(--ns-border-subtle)] bg-[var(--ns-surface-card)] md:w-60 md:border-r md:border-b-0">
+        <div className="flex flex-1">
+          {/* 240px open, 56px collapsed, width-only transition. Hidden below
+              1024px, where the same navigator opens as a drawer instead. */}
+          <aside className="hidden w-60 shrink-0 border-r border-[var(--ns-border-subtle)] bg-[var(--ns-nav-bg)] transition-[width] duration-200 nav-closed:w-14 lg:block">
             <SideNav showAdmin={record?.role === "Project Manager"} />
           </aside>
           <main className="min-w-0 flex-1">{children}</main>
