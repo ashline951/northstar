@@ -8,25 +8,25 @@ export default async function Home() {
 
   return (
     <AppShell>
-      <div className="mx-auto flex max-w-5xl flex-col items-center px-6 py-16 text-center sm:py-24">
+      <div className="mx-auto flex max-w-6xl flex-col items-center px-6 py-10 text-center sm:py-14">
         <h1 className="ns-display text-2xl text-[var(--ns-text-primary)] sm:text-3xl">
           {first ? `Welcome, ${first}` : "Welcome"}
         </h1>
 
+        {/* The hero carries its own Northstar wordmark and the LLUH line, so
+            the page does not repeat them underneath. */}
         <Image
-          src="/brand/northstar-emblem-dark-bg.png"
-          alt="Northstar emblem"
-          width={300}
-          height={400}
+          src="/brand/northstar-hero.jpg"
+          alt="Northstar — Project Management System, Loma Linda University Health"
+          width={2000}
+          height={1116}
           priority
-          className="mt-10 h-auto w-48 rounded-2xl shadow-xl sm:w-60"
+          sizes="(max-width: 1152px) 100vw, 1152px"
+          className="mt-8 h-auto w-full rounded-2xl shadow-2xl ring-1 ring-black/10 dark:ring-white/10"
         />
 
-        <p className="ns-display mt-10 text-3xl tracking-wide text-[var(--ns-text-primary)] sm:text-5xl">
+        <p className="ns-display mt-10 text-3xl tracking-wide text-[var(--ns-text-primary)] sm:text-4xl">
           Endless Possibilities
-        </p>
-        <p className="mt-4 text-sm tracking-widest text-[var(--ns-text-secondary)] uppercase">
-          Loma Linda University Health
         </p>
       </div>
     </AppShell>
