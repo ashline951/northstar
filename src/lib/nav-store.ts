@@ -117,20 +117,23 @@ export async function listHistory(email: string): Promise<HistoryEntry[]> {
 
 /**
  * Records a page visit. One row per page per person - revisiting moves it to
- * the top instead of filling the list with the same entry - and anything past
- * the newest 30 is trimmed.
+ * the top (with its latest address) instead of filling the list with the same
+ * page - and anything past the newest 30 is trimmed.
  */
 export async function recordVisit(
   email: string,
   label: string,
   href: string
 ): Promise<void> {
+  // One row per page (path); the row keeps the latest full address, so a list
+  // comes back with the filter it last had.
+  const path = href.split(/[?#]/)[0] || "/";
   try {
     await sql`
-      insert into northstar_nav_history (user_email, label, href)
-      values (${email}, ${label}, ${href})
-      on conflict (lower(user_email), href)
-      do update set visited_at = now(), label = ${label}
+      insert into northstar_nav_history (user_email, label, href, path)
+      values (${email}, ${label}, ${href}, ${path})
+      on conflict (lower(user_email), path)
+      do update set visited_at = now(), label = ${label}, href = ${href}
     `;
     await sql`
       delete from northstar_nav_history

@@ -9,7 +9,9 @@ const openSans = Open_Sans({
 });
 
 export const metadata: Metadata = {
-  title: "Northstar",
+  // Page titles read "Active Ideas · Northstar". The navigator saves them as
+  // History entries and favourite names, so they must never hold sensitive data.
+  title: { default: "Northstar", template: "%s · Northstar" },
   description: "Northstar — Loma Linda University Health project management.",
   icons: {
     icon: [
@@ -23,13 +25,18 @@ export const metadata: Metadata = {
 
 /** Applies the saved theme before first paint so there is no light-to-dark
  *  flash. Mirrors the logic in ThemeToggle. */
-/** Applies the saved navigator state before first paint, so a collapsed rail
- *  does not flash open on load. Pairs with the nav-closed: variant. */
+/** Applies the saved navigator state (collapsed, and any width the person
+ *  dragged it to) before first paint, so nothing jumps on load. Pairs with the
+ *  nav-closed: variant and the --nav-width variable. */
 const navScript = `
 (function () {
   try {
     if (localStorage.getItem("northstar:nav") === "closed") {
       document.documentElement.setAttribute("data-nav", "closed");
+    }
+    var w = Number(localStorage.getItem("northstar:nav-width"));
+    if (w >= 200 && w <= 400) {
+      document.documentElement.style.setProperty("--nav-width", w + "px");
     }
   } catch (e) {}
 })();

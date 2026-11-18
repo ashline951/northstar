@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { auth } from "@/auth";
 import AppShell from "@/components/AppShell";
@@ -5,6 +6,11 @@ import ServiceUnavailable from "@/components/ServiceUnavailable";
 import { lookupUser } from "@/lib/users";
 import { listByView } from "@/lib/records";
 import { VIEWS, viewByKey } from "@/lib/views";
+
+export async function generateMetadata({ params }: { params: Promise<{ view: string }> }): Promise<Metadata> {
+  const view = viewByKey((await params).view);
+  return { title: view?.label ?? "Records" };
+}
 
 export function generateStaticParams() {
   return VIEWS.map((v) => ({ view: v.key }));
