@@ -3,6 +3,7 @@ import AppShell from "@/components/AppShell";
 import { lookupUser } from "@/lib/users";
 import ServiceUnavailable from "@/components/ServiceUnavailable";
 import { STATUSES, listItems, listLinks } from "@/lib/project";
+import { CAPABILITIES, type Coverage } from "@/lib/capabilities";
 import {
   addItemAction,
   addLinkAction,
@@ -17,6 +18,22 @@ const STATUS_STYLE: Record<string, string> = {
   Blocked: "bg-red-500/15 text-red-700 dark:text-red-400",
   Done: "bg-[var(--ns-gold-glow)]/20 text-[var(--ns-bg-rich-navy)] dark:text-[var(--ns-gold-light)]",
 };
+
+const DOT: Record<Coverage, string> = {
+  Covered: "bg-[var(--ns-lluh-teal)]",
+  Partial: "bg-[var(--ns-gold-glow)]",
+  Gap: "bg-[var(--ns-bg-rich-navy)] dark:bg-slate-400",
+};
+
+function Dot({ c }: { c: Coverage }) {
+  return (
+    <span
+      aria-label={c}
+      title={c}
+      className={`inline-block h-2.5 w-2.5 rounded-full ${DOT[c]}`}
+    />
+  );
+}
 
 export default async function ProjectPage() {
   const session = await auth();
@@ -161,9 +178,60 @@ export default async function ProjectPage() {
           </ul>
         </section>
 
+        <section className="mt-14">
+          <h2 className="ns-display text-2xl text-[var(--ns-text-primary)]">
+            What a modern AI project management system needs
+          </h2>
+          <p className="mt-2 max-w-3xl text-sm text-[var(--ns-text-secondary)]">
+            A working checklist for Northstar, with our current ServiceNow
+            footprint as the baseline — so the conversation is about the gap
+            rather than rebuilding what we already have. This is a reference
+            list, not a backlog.
+          </p>
+
+          <div className="mt-4 flex flex-wrap gap-4 text-xs text-[var(--ns-text-secondary)]">
+            <span><Dot c="Covered" /> ServiceNow covers it</span>
+            <span><Dot c="Partial" /> Partly there</span>
+            <span><Dot c="Gap" /> Where Northstar earns its place</span>
+          </div>
+
+          <div className="mt-6 space-y-6">
+            {CAPABILITIES.map((g) => (
+              <div
+                key={g.group}
+                className="overflow-hidden rounded-xl border border-[var(--ns-border-subtle)] bg-[var(--ns-surface-card)]"
+              >
+                <h3 className="border-b border-[var(--ns-border-subtle)] bg-black/[0.03] px-5 py-3 text-sm font-semibold tracking-wide text-[var(--ns-text-primary)] uppercase dark:bg-white/[0.04]">
+                  {g.group}
+                </h3>
+                <ul>
+                  {g.items.map((c) => (
+                    <li
+                      key={c.name}
+                      className="flex gap-3 border-b border-[var(--ns-border-subtle)] px-5 py-3 last:border-0"
+                    >
+                      <span className="mt-1.5 shrink-0">
+                        <Dot c={c.servicenow} />
+                      </span>
+                      <span>
+                        <span className="block text-sm font-medium text-[var(--ns-text-primary)]">
+                          {c.name}
+                        </span>
+                        <span className="block text-sm text-[var(--ns-text-secondary)]">
+                          {c.detail}
+                        </span>
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ))}
+          </div>
+        </section>
+
         <p className="mt-10 text-xs text-[var(--ns-text-secondary)]">
-          Stored in <code>northstar_tmp_*</code> tables. Deliberately throwaway —
-          do not build on them.
+          Work items and links are stored in <code>northstar_tmp_*</code> tables.
+          Deliberately throwaway — do not build on them.
         </p>
       </div>
     </AppShell>

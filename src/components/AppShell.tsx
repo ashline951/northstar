@@ -45,16 +45,17 @@ export default async function AppShell({
             </span>
           </Link>
 
-          <nav className="ml-6 flex flex-1 items-center gap-5">
-            {canSeeProject && (
-              <Link
-                href="/project"
-                className="text-sm font-medium text-[var(--ns-text-inverse)]/75 transition hover:text-[var(--ns-gold-light)]"
-              >
-                Northstar Project
-              </Link>
-            )}
-          </nav>
+          {/* Spacer pushes the project link and the user menu to the right. */}
+          <div className="flex-1" />
+
+          {canSeeProject && (
+            <Link
+              href="/project"
+              className="rounded-lg border border-[var(--ns-gold-glow)]/40 px-3 py-1.5 text-sm font-medium text-[var(--ns-gold-light)] transition hover:border-[var(--ns-gold-glow)] hover:bg-[var(--ns-gold-glow)]/10"
+            >
+              Northstar Project
+            </Link>
+          )}
 
           {user && (
             <UserMenu
