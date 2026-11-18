@@ -30,8 +30,8 @@ export const VIEW_GROUPS: { lifecycle: Lifecycle; views: RecordView[] }[] = [
     views: [
       {
         key: "ideas-active",
-        label: "All Active Ideas",
-        title: "All Active Ideas",
+        label: "Active Ideas",
+        title: "Active Ideas",
         lifecycle: "Idea",
         activeOnly: true,
         description: "Ideas still in play.",
@@ -43,8 +43,8 @@ export const VIEW_GROUPS: { lifecycle: Lifecycle; views: RecordView[] }[] = [
     views: [
       {
         key: "demands-active",
-        label: "All Active Demands",
-        title: "All Active Demands",
+        label: "Active Demands",
+        title: "Active Demands",
         lifecycle: "Demand",
         activeOnly: true,
         description: "Demands still in play.",
@@ -64,8 +64,8 @@ export const VIEW_GROUPS: { lifecycle: Lifecycle; views: RecordView[] }[] = [
     views: [
       {
         key: "projects-active",
-        label: "All Active Projects",
-        title: "All Active Projects",
+        label: "Active Projects",
+        title: "Active Projects",
         lifecycle: "Project",
         activeOnly: true,
         description: "Projects still in play.",

@@ -5,7 +5,7 @@ import { getActiveUser } from "@/lib/users";
 import UserMenu from "./UserMenu";
 import WelcomeGate from "./WelcomeGate";
 import Assistant from "./Assistant";
-import SideNav from "./SideNav";
+import SideNav from "./nav/side-nav";
 
 export default async function AppShell({
   children,
@@ -75,7 +75,9 @@ export default async function AppShell({
           everyone else gets the plain single-column layout. */}
       {canSeeProject ? (
         <div className="flex flex-1 flex-col md:flex-row">
-          <SideNav />
+          <aside className="shrink-0 border-b border-[var(--ns-border-subtle)] bg-[var(--ns-surface-card)] md:w-60 md:border-r md:border-b-0">
+            <SideNav showAdmin={record?.role === "Project Manager"} />
+          </aside>
           <main className="min-w-0 flex-1">{children}</main>
         </div>
       ) : (

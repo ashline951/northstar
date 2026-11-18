@@ -258,8 +258,8 @@ and conversation stay with the record - the copying in ServiceNow is what loses 
   project, and who decided" has an answer.
 
 **List views are a registry, not routes.** `src/lib/views.ts` defines each view as a named filter
-(lifecycle + `activeOnly`); `SideNav` renders the navigation from it and `/records/[view]` resolves
-the key and runs `listByView`. Adding a view is one entry - the nav, the heading and the query
+(lifecycle + `activeOnly`); `src/components/nav/nav-items.ts` builds the navigation from it and
+`/records/[view]` resolves the key and runs `listByView`. Adding a view is one entry - the nav, the heading and the query
 cannot drift apart. `northstar_records.is_active` is the flag: `activeOnly: false` returns active
 and inactive together, which is what "All Demands" means.
 
@@ -267,6 +267,13 @@ and inactive together, which is what "All Demands" means.
 views. It drops into `/records/[view]/page.tsx`, where `records` is already filtered and `view`
 carries the definition. The placeholder there reports the row count so the wiring is visibly
 working. Do not invent a list view before that file arrives.
+
+**Navigation follows the cs-tracker pattern.** `nav-items.ts` is the registry, `side-nav.tsx`
+renders it recursively, so nesting can go deeper without touching the component. Groups open when
+the current page is inside them; the current page carries a gold inset bar. **Project Portfolio
+Management is the application and sits at the top**, with Ideas, Demands and Projects beneath it.
+Northstar is the code name of the project building PPM, so `/project` sits alongside rather than
+under it - when PPM joins a larger platform, other applications become siblings of that entry.
 
 **Test data labels itself.** While `NORTHSTAR_DATA_MODE` is not `live`, every MCP tool that returns
 project content prefixes it with a banner saying it is POC test data, and the server's `initialize`
@@ -295,6 +302,7 @@ Claude admin console, not here.
 | 2026-11-17 | Access control moved from Entra assignment to an in-app allow list | Ryan wants the tenant able to authenticate, with Northstar deciding who gets in |
 | 2026-11-17 | Assistant calls Anthropic directly, not through Vercel AI Gateway | Ryan wants LLUH's own Claude account; the app host and the model provider are independent |
 | 2026-11-17 | Assistant scoped to Northstar only, with a hard PHI refusal | A free-text box in a health system is how PHI leaks by accident |
+| 2026-11-18 | Project Portfolio Management is the top-level application in the nav | Northstar is a project code name; PPM is the product, and will sit beside others on a larger platform |
 | 2026-11-18 | List views are defined in one registry and rendered from it | Nav, heading and query come from one definition, so they cannot disagree |
 | 2026-11-18 | Idea / Demand / Project are one table with a lifecycle field | Ryan's design. Conversion copying is what loses history; one maturing record keeps it |
 | 2026-11-18 | The record number is derived from lifecycle + an immutable suffix | A number that mutates breaks every reference written before it changed |
