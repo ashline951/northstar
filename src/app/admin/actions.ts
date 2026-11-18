@@ -8,6 +8,7 @@ import {
   addUser,
   deactivateUser,
   getActiveUser,
+  resetWelcome,
   setProjectAccess,
   setRole,
 } from "@/lib/users";
@@ -100,4 +101,13 @@ export async function runMigrationsAction() {
   await requireProjectManager();
   await runPendingMigrations();
   revalidatePath("/admin");
+}
+
+export async function resetWelcomeAction(formData: FormData) {
+  await requireProjectManager();
+  const email = String(formData.get("email") ?? "").trim();
+  if (!email) return;
+  await resetWelcome(email);
+  revalidatePath("/admin");
+  revalidatePath("/");
 }

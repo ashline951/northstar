@@ -14,6 +14,7 @@ import {
   addUserAction,
   deactivateUserAction,
   deleteNoteAction,
+  resetWelcomeAction,
   runMigrationsAction,
   setProjectAccessAction,
   setRoleAction,
@@ -155,9 +156,21 @@ export default async function AdminPage() {
                       </form>
                     </td>
                     <td className="px-4 py-3 text-[var(--ns-text-secondary)]">
-                      {u.welcome_seen_at
-                        ? new Date(u.welcome_seen_at).toLocaleDateString()
-                        : "Not yet"}
+                      {u.welcome_seen_at ? (
+                        <form action={resetWelcomeAction}>
+                          <input type="hidden" name="email" value={u.email} />
+                          <button
+                            type="submit"
+                            title="Clear this, so they see the intro again"
+                            className="underline-offset-2 hover:text-[var(--ns-text-primary)] hover:underline"
+                          >
+                            {new Date(u.welcome_seen_at).toLocaleDateString()} ·
+                            reset
+                          </button>
+                        </form>
+                      ) : (
+                        "Not yet"
+                      )}
                     </td>
                     <td className="px-4 py-3 text-right">
                       {!isMe && u.is_active && (

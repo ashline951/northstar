@@ -126,3 +126,13 @@ export async function setProjectAccess(
     where lower(email) = ${email.toLowerCase()}
   `;
 }
+
+/** Clears someone's welcome-video record so they see the first-run
+ *  experience again. Useful before a demo, and the only way to re-test the
+ *  gate as a new person sees it. */
+export async function resetWelcome(email: string): Promise<void> {
+  await sql`
+    update northstar_users set welcome_seen_at = null
+    where lower(email) = ${email.toLowerCase()}
+  `;
+}
