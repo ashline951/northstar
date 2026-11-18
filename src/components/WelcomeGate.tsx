@@ -3,7 +3,12 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { recordWelcomeSeen } from "@/app/actions";
 
-const VIDEO_URL = process.env.NEXT_PUBLIC_WELCOME_VIDEO_URL ?? "";
+/** The intro ships with the app, so it works with no configuration. Set
+ *  NEXT_PUBLIC_WELCOME_VIDEO_URL to point elsewhere - Vercel Blob, say - if
+ *  the file ever outgrows being committed. */
+const VIDEO_URL =
+  process.env.NEXT_PUBLIC_WELCOME_VIDEO_URL || "/brand/northstar-intro.mp4";
+const POSTER_URL = "/brand/northstar-intro-poster.jpg";
 
 export default function WelcomeGate({
   firstName,
@@ -70,6 +75,7 @@ export default function WelcomeGate({
           <video
             ref={videoRef}
             src={VIDEO_URL}
+            poster={POSTER_URL}
             preload="metadata"
             playsInline
             controls={started}
