@@ -263,13 +263,25 @@ and conversation stay with the record - the copying in ServiceNow is what loses 
 cannot drift apart. `northstar_records.is_active` is the flag: `activeOnly: false` returns active
 and inactive together, which is what "All Demands" means.
 
-**The list view is specified but not built.** `docs/standards/list-view.md` (v1.1) is the LLUH
-standard, written from the CS Tracker build, checked against its code, and kept in cs-tracker (re-copy
-it here when it changes). Its Appendix A holds the full reference code to start from: one shared list view driven by a registry, column chooser,
-per-column search operators, AND/OR/NOT filter builder, group by, breadcrumbs, saved views and
-filters, CSV export, and the ✨ AI assistant. **Read it before building the list view.** It drops
-into `/records/[view]/page.tsx`, where `records` is already filtered and `view` carries the
-definition; the placeholder there reports the row count so the wiring is visibly working.
+**The list view is PARTLY built, and not from the reference code.**
+`docs/standards/list-view.md` (v1.1) is the LLUH standard, kept in cs-tracker (re-copy it here when
+it changes). What exists in `src/components/list-view/` and `src/lib/list-view/` was hand-written
+from **v1.0's prose**, before v1.1 landed. v1.1 says to **start from Appendix A's reference code and
+not to redesign or simplify it**, precisely because apps built from the description alone came out
+"close but different". So the current build is the thing the standard was revised to prevent, and
+is best treated as a stop-gap.
+
+Built: one shared view driven by the registry, sortable columns, per-column search with the full
+operator set, paging (10/20/50/100/500, default 50), compact/comfortable density remembered per
+browser, relative dates, empty state with a reset, and CSV export of every matching row (capped at
+10,000, formula-safe, permission re-checked).
+
+Not built: the ☰ list menu, filter builder (AND/OR/NOT), column chooser, group by, right-click
+actions, breadcrumbs, saved views and filters, the ✨ AI assistant, and the phone/tablet card
+layout. The toolbar order is also not the standard's.
+
+**Adopting Appendix A means adding shadcn/ui to Northstar**, which it does not use today. That is
+Ryan's call, and until it is made, do not add a second hand-written table: extend the shared one.
 
 Two rules from that standard are non-negotiable and easy to get wrong: **every AI answer's numbers
 come from a real query, never from the model reading rows**, and **nothing from a column marked
@@ -344,6 +356,8 @@ Claude admin console, not here.
 | 2026-11-18 | Navigator built to `docs/standards/left-navigator.md`, with navy as the light-mode nav primary | Gold measures 1.77:1 against the standard's 4.5:1 requirement |
 | 2026-11-18 | Navigator brought up to standard v1.3: tabs, favourites, history, drag-to-resize, standard drawer | Ryan asked for Northstar to match the CS Tracker navigator, including the new features |
 | 2026-11-18 | Navigator width: 240px default, people drag it from 200 to 400px | Ryan first asked for wider, then chose resizable with the original default |
+| 2026-11-18 | List views built by hand from standard v1.0, before Appendix A existed | A stop-gap. v1.1 says to copy the reference code; adopting it needs shadcn/ui, which is Ryan's call |
+| 2026-11-18 | Demo records seeded in a migration, marked `created_by = 'demo seed'` | The list views needed content; the marker means one statement removes it all |
 | 2026-11-18 | List view standard v1.1 copied from cs-tracker, its home | Checked against the CS Tracker code, with full reference code; cs-tracker keeps the master copy |
 | 2026-11-18 | Project Portfolio Management is the top-level application in the nav | Northstar is a project code name; PPM is the product, and will sit beside others on a larger platform |
 | 2026-11-18 | List views are defined in one registry and rendered from it | Nav, heading and query come from one definition, so they cannot disagree |
@@ -362,6 +376,8 @@ Claude admin console, not here.
 
 ## 10. Open questions for Ryan
 
+- [ ] Rebuild the list view from the standard's Appendix A (adds shadcn/ui), or keep the
+      hand-written one and accept it differs from CS Tracker?
 - [ ] Demo date.
 - [ ] Welcome video file (Gemini, ~60s) — then set `NEXT_PUBLIC_WELCOME_VIDEO_URL`.
 - [ ] Ask Identity to turn **Assignment required OFF**; Northstar now gates access itself.
