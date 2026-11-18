@@ -97,6 +97,7 @@ Record base URL, auth method, and env var **names** below. Never record secret v
 |---|---|---|---|
 | `AUTH_SECRET` | Auth.js session/JWT signing | `.env.local` + Vercel | `npx auth secret` |
 | `ANTHROPIC_API_KEY` | Northstar assistant | Vercel | **Secret.** Missing = assistant returns 503, rest of the app is fine |
+| `NORTHSTAR_DATA_MODE` | `test` (default) or `live` | Vercel | `test` labels all MCP project content as synthetic. Switch only when the data is real |
 | `AUTH_URL` | Public origin Auth.js builds callback URLs from | Vercel | **Must match a registered Entra redirect URI**, or sign-in fails with redirect_uri mismatch |
 | `DATABASE_URL` | Neon Postgres | Vercel (set by the integration) | Access control and roles live here, not in env vars |
 | `NEXT_PUBLIC_WELCOME_VIDEO_URL` | Welcome video source | `.env.local` + Vercel | Blank is handled gracefully |
@@ -238,6 +239,16 @@ redirecting - bouncing to an unvalidated redirect is how an open redirect become
 `/oauth/*` and `/mcp` are excluded from middleware because they authenticate themselves;
 `/oauth/authorize` still calls `auth()` itself.
 
+**Test data labels itself.** While `NORTHSTAR_DATA_MODE` is not `live`, every MCP tool that returns
+project content prefixes it with a banner saying it is POC test data, and the server's `initialize`
+instructions tell Claude not to retain it or carry it between conversations. The reason is Ryan's:
+a fake project resurfacing months later as if it were real is how people stop trusting the
+assistant. The banner rides with the payload, not only in the server instructions, so a single
+result quoted out of context still carries its own warning. The roster of people is real and is not
+banner-wrapped. **Set `NORTHSTAR_DATA_MODE=live` only when the workspace genuinely holds real
+project data.** This is mitigation, not a guarantee - retention and memory are controlled in the
+Claude admin console, not here.
+
 **Not built, deliberately**
 - Real project management (the `/project` page is a stop-gap, not the product)
 - Entra security groups - roles are in-app only
@@ -255,6 +266,7 @@ redirecting - bouncing to an unvalidated redirect is how an open redirect become
 | 2026-11-17 | Access control moved from Entra assignment to an in-app allow list | Ryan wants the tenant able to authenticate, with Northstar deciding who gets in |
 | 2026-11-17 | Assistant calls Anthropic directly, not through Vercel AI Gateway | Ryan wants LLUH's own Claude account; the app host and the model provider are independent |
 | 2026-11-17 | Assistant scoped to Northstar only, with a hard PHI refusal | A free-text box in a health system is how PHI leaks by accident |
+| 2026-11-18 | POC project data labels itself as synthetic in every MCP result | A fake project recalled as fact months later is how trust in the assistant dies |
 | 2026-11-18 | Claude connects via MCP with per-user OAuth, not a shared key | Claude must see exactly what the person sees; a service credential would erase the access model |
 | 2026-11-17 | Migrations ship in code and apply themselves on deploy | Pushing code is the whole deployment step; nobody should click a button or open a SQL console |
 | 2026-11-17 | `/project` workspace on throwaway `northstar_tmp_*` tables | Run the project now; migrate later rather than guessing the real model today |

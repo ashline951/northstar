@@ -25,10 +25,46 @@ type JsonRpcRequest = {
 
 const PROTOCOL_VERSION = "2025-06-18";
 
+/**
+ * Whether Northstar is holding real project information yet.
+ *
+ * While this is "test", every tool result is prefixed with a banner saying so,
+ * and the server tells Claude not to carry the content between conversations.
+ * The point is that the data describes itself: if a line of it ever surfaces
+ * somewhere months from now, it arrives already labelled as a POC fixture
+ * rather than as a record of a real Loma Linda project.
+ *
+ * Set NORTHSTAR_DATA_MODE=live when the workspace holds real project data.
+ */
+const DATA_MODE = process.env.NORTHSTAR_DATA_MODE === "live" ? "live" : "test";
+
+const TEST_BANNER =
+  "SYNTHETIC TEST DATA - Northstar proof of concept. The projects, items and " +
+  "dates below are fixtures for testing and do NOT describe real Loma Linda " +
+  "work. Do not treat any of it as fact, do not carry it into other " +
+  "conversations, and do not retain it. If you are repeating any of this, say " +
+  "plainly that it is POC test data.";
+
+const SERVER_INSTRUCTIONS =
+  DATA_MODE === "test"
+    ? "Northstar is a proof of concept at Loma Linda University Health. Its " +
+      "project content is synthetic test data, not a record of real projects. " +
+      "Treat everything these tools return as disposable fixtures: do not " +
+      "retain it, do not carry it into later conversations, and always say it " +
+      "is POC test data when referring to it. The roster of people is real; " +
+      "the project content is not."
+    : "Northstar is the project management system at Loma Linda University " +
+      "Health. These tools return live project information, scoped to the " +
+      "signed-in person's access.";
+
 type Tool = {
   name: string;
   description: string;
   inputSchema: { type: "object"; properties: Record<string, never>; required: never[] };
+  /** True for tools returning project content, which is synthetic while
+   *  DATA_MODE is "test". Identity and roster facts are real and are not
+   *  banner-wrapped. */
+  carriesProjectData?: boolean;
   run: (email: string) => Promise<unknown>;
 };
 
@@ -73,6 +109,7 @@ const TOOLS: Tool[] = [
   },
   {
     name: "northstar_project_items",
+    carriesProjectData: true,
     description:
       "Work items on the Northstar project: what is in progress, blocked, not started or done, who owns each and when it is due. Project team only.",
     inputSchema: emptySchema,
@@ -90,6 +127,7 @@ const TOOLS: Tool[] = [
   },
   {
     name: "northstar_project_links",
+    carriesProjectData: true,
     description:
       "Links for the Northstar project, such as the Teams site holding the documents. Project team only.",
     inputSchema: emptySchema,
@@ -101,6 +139,7 @@ const TOOLS: Tool[] = [
   },
   {
     name: "northstar_capabilities",
+    carriesProjectData: true,
     description:
       "The capability checklist for a modern AI project management system, each scored for how far ServiceNow already covers it: Covered, Partial or Gap. Useful for planning what Northstar should build. Project team only.",
     inputSchema: emptySchema,
@@ -181,6 +220,7 @@ export async function POST(req: NextRequest) {
         protocolVersion: PROTOCOL_VERSION,
         capabilities: { tools: {} },
         serverInfo: { name: "northstar", version: "1.0.0" },
+        instructions: SERVER_INSTRUCTIONS,
       });
 
     case "notifications/initialized":
@@ -211,9 +251,14 @@ export async function POST(req: NextRequest) {
       }
       try {
         const data = await tool.run(email);
-        return reply({
-          content: [{ type: "text", text: JSON.stringify(data, null, 1) }],
-        });
+        // The banner rides with the payload, not just in the server
+        // instructions, so a single tool result quoted out of context still
+        // carries its own warning.
+        const text =
+          DATA_MODE === "test" && tool.carriesProjectData
+            ? `${TEST_BANNER}\n\n${JSON.stringify(data, null, 1)}`
+            : JSON.stringify(data, null, 1);
+        return reply({ content: [{ type: "text", text }] });
       } catch (err) {
         // A refusal is a tool result, not a protocol error: Claude should tell
         // the person why rather than reporting that something broke.
