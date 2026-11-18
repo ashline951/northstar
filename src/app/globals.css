@@ -27,6 +27,12 @@
   --ns-nav-primary: #3a506b;
   --ns-nav-primary-tint: #e8e9ea;
   --ns-nav-hover: rgba(11, 19, 43, 0.05);
+  /* Standard navigator text (docs/standards/left-navigator.md section 6): the
+     same neutral text in every LLUH app; only --ns-nav-primary is Northstar's. */
+  --ns-nav-text: #333333;
+  --ns-nav-text-muted: #5c5c5c;
+  --ns-nav-input: #7a7a7a;
+  --ns-nav-error: #b42318;
 
   /* Typography */
   --ns-font-display: 'Palatino Linotype', Palatino, Georgia, 'Times New Roman', serif;
@@ -51,6 +57,10 @@
   --ns-nav-primary: #f9a825;
   --ns-nav-primary-tint: #2a2c3f;
   --ns-nav-hover: rgba(255, 255, 255, 0.06);
+  --ns-nav-text: var(--ns-text-primary);
+  --ns-nav-text-muted: var(--ns-text-secondary);
+  --ns-nav-input: var(--ns-border-subtle);
+  --ns-nav-error: #f4a39b;
 }
 
 @theme inline {
@@ -82,4 +92,6 @@ body {
 /* The collapsed navigator is a width change on a wrapper, driven by a
    data attribute on <html> that an inline script sets before first paint.
    Doing it in CSS rather than React means no flicker on load. */
-@custom-variant nav-closed (:where(html[data-nav="closed"]) &);
+/* Collapsed navigator (icon rail). Not inside a <dialog>: the phone/tablet
+   drawer always shows the full navigator. */
+@custom-variant nav-closed (:where(html[data-nav="closed"]) &:not(:where(dialog, dialog *)));

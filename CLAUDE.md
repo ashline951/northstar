@@ -274,9 +274,12 @@ Two rules from that standard are non-negotiable and easy to get wrong: **every A
 come from a real query, never from the model reading rows**, and **columns marked private never
 reach the model, by any tool, for any reason**.
 
-**The navigator follows `docs/standards/left-navigator.md`** - the LLUH app standard, copied in from
-cs-tracker. Sizes, type, states and behaviour come from there; only the brand colour is per-app.
-Read it before changing the navigator.
+**The navigator follows `docs/standards/left-navigator.md` (v1.3)** - the LLUH app standard, copied
+in from cs-tracker (re-copy it when cs-tracker updates it). Sizes, type, states, wording and behaviour
+come from there; only the brand colour is per-app. Read it before changing the navigator. Built:
+collapse to an icon rail, **drag-to-resize** (240px default, 200-400px, `northstar:nav-width`),
+search, **Menu / Favorites / History** tabs, per-person **favourites** and **history** on the server,
+and the phone/tablet drawer.
 
 - **`--ns-nav-primary` is navy in light mode, gold in dark.** The standard requires the
   current-page colour to clear 4.5:1 on the navigator background and on its own 10% tint. Measured:
@@ -292,7 +295,21 @@ Read it before changing the navigator.
 - **Deviation from the standard:** it allows one level of nesting; Northstar has two
   (PPM -> Ideas -> Active Ideas). Ryan asked for PPM at the top with the lifecycles beneath.
   Flagged, not yet decided.
-- **Not built yet:** the Menu/Favorites tabs and per-person favourites, which need server storage.
+- **Favourites and history** live in `northstar_nav_favorites` / `northstar_nav_history` (migrations
+  011 and 012), keyed on lower(email). `src/lib/nav-store.ts` holds the queries; `src/app/nav-actions.ts`
+  is the only way in from the browser, and **every action re-checks the signed-in person against the
+  roster and touches only their rows** - the email comes from the session, never the client. History
+  is one row per page (path) with the latest address, kept to 30; `history-recorder.tsx` (in
+  AppShell) records each page change using the page title.
+- **Page titles are saved in History and favourites**, so they read "Active Ideas · Northstar"
+  (`title.template` in `layout.tsx`, `metadata` / `generateMetadata` per page) and **must never
+  contain sensitive data**.
+- Navigator text uses the standard's neutral colours (`--ns-nav-text` #333333, `--ns-nav-text-muted`
+  #5c5c5c in light mode), not the general Northstar text tokens.
+- The `nav-closed:` variant skips `<dialog>`, so the phone drawer (a native modal `<dialog>`) always
+  shows the full navigator even when the desktop rail is collapsed.
+- **Deviation from the standard:** groups have no page of their own (a group's link is its first
+  view), so there is no "<Group> overview" row.
 
 **Test data labels itself.** While `NORTHSTAR_DATA_MODE` is not `live`, every MCP tool that returns
 project content prefixes it with a banner saying it is POC test data, and the server's `initialize`
@@ -322,6 +339,8 @@ Claude admin console, not here.
 | 2026-11-17 | Assistant calls Anthropic directly, not through Vercel AI Gateway | Ryan wants LLUH's own Claude account; the app host and the model provider are independent |
 | 2026-11-17 | Assistant scoped to Northstar only, with a hard PHI refusal | A free-text box in a health system is how PHI leaks by accident |
 | 2026-11-18 | Navigator built to `docs/standards/left-navigator.md`, with navy as the light-mode nav primary | Gold measures 1.77:1 against the standard's 4.5:1 requirement |
+| 2026-11-18 | Navigator brought up to standard v1.3: tabs, favourites, history, drag-to-resize, standard drawer | Ryan asked for Northstar to match the CS Tracker navigator, including the new features |
+| 2026-11-18 | Navigator width: 240px default, people drag it from 200 to 400px | Ryan first asked for wider, then chose resizable with the original default |
 | 2026-11-18 | Project Portfolio Management is the top-level application in the nav | Northstar is a project code name; PPM is the product, and will sit beside others on a larger platform |
 | 2026-11-18 | List views are defined in one registry and rendered from it | Nav, heading and query come from one definition, so they cannot disagree |
 | 2026-11-18 | Idea / Demand / Project are one table with a lifecycle field | Ryan's design. Conversion copying is what loses history; one maturing record keeps it |

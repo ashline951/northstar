@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { auth } from "@/auth";
 import AppShell from "@/components/AppShell";
 import { lookupUser } from "@/lib/users";
@@ -37,6 +38,9 @@ function Dot({ c }: { c: Coverage }) {
     />
   );
 }
+
+
+export const metadata: Metadata = { title: "Northstar Project" };
 
 export default async function ProjectPage() {
   const session = await auth();

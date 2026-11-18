@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { auth } from "@/auth";
 import AppShell from "@/components/AppShell";
 import {
@@ -19,6 +20,9 @@ import {
   setProjectAccessAction,
   setRoleAction,
 } from "./actions";
+
+
+export const metadata: Metadata = { title: "Admin" };
 
 export default async function AdminPage() {
   const session = await auth();

@@ -204,6 +204,27 @@ export const MIGRATIONS: Migration[] = [
          on northstar_nav_history (lower(user_email), visited_at desc)`,
     ],
   },
+  {
+    // Standard v1.2: History keeps one entry per PAGE (path), remembering the
+    // latest address, so filtering a list does not fill History with copies.
+    // Nothing wrote to this table before this migration, but each step is
+    // still safe to re-run and safe on existing rows.
+    name: "012_nav_history_per_page",
+    statements: [
+      `alter table northstar_nav_history add column if not exists path text`,
+      `update northstar_nav_history set path = split_part(href, '?', 1) where path is null`,
+      `delete from northstar_nav_history h
+         using northstar_nav_history newer
+         where lower(h.user_email) = lower(newer.user_email)
+           and h.path = newer.path
+           and (h.visited_at < newer.visited_at
+                or (h.visited_at = newer.visited_at and h.id < newer.id))`,
+      `drop index if exists northstar_nav_history_user_href`,
+      `create unique index if not exists northstar_nav_history_user_path
+         on northstar_nav_history (lower(user_email), path)`,
+      `alter table northstar_nav_history alter column path set not null`,
+    ],
+  },
 ];
 
 export type MigrationState = { name: string; applied_at: string | null };

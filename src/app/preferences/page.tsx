@@ -1,5 +1,9 @@
+import type { Metadata } from "next";
 import AppShell from "@/components/AppShell";
 import ThemeToggle from "@/components/ThemeToggle";
+
+
+export const metadata: Metadata = { title: "Preferences" };
 
 export default function PreferencesPage() {
   return (

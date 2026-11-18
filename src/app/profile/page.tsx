@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { auth } from "@/auth";
 import AppShell from "@/components/AppShell";
 import Avatar from "@/components/Avatar";
@@ -14,6 +15,9 @@ function Field({ label, value }: { label: string; value?: string | null }) {
     </div>
   );
 }
+
+
+export const metadata: Metadata = { title: "Profile" };
 
 export default async function ProfilePage() {
   const u = (await auth())?.user;

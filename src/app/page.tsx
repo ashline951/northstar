@@ -1,6 +1,10 @@
+import type { Metadata } from "next";
 import Image from "next/image";
 import { auth } from "@/auth";
 import AppShell from "@/components/AppShell";
+
+
+export const metadata: Metadata = { title: "Home" };
 
 export default async function Home() {
   const session = await auth();
