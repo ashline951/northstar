@@ -168,6 +168,8 @@ in every action. A server action is a public endpoint; hiding the admin link is 
 | `/admin` | Access, assistant notes, project access, migrations. Project managers only |
 | `/project` | Northstar project workspace. `has_project_access` only |
 | `/records/[view]` | List views from `src/lib/views.ts`. `has_project_access` only |
+| `/record/[number]` | One record's form. `has_project_access` only |
+| `/record/new` | Create, with `?lifecycle=` and `?from=`. `has_project_access` only |
 | `/api/chat` | Northstar assistant. Auth required, re-checked in the route |
 | `/api/auth/*` | Auth.js handlers |
 | `/mcp` | MCP server for Claude. Bearer token, per person |
@@ -257,6 +259,20 @@ and conversation stay with the record - the copying in ServiceNow is what loses 
   first state. Each move is written to `northstar_record_history`, so "when did this become a
   project, and who decided" has an answer.
 
+**Efforts views span every lifecycle.** `RecordView.lifecycle` is optional, and `undefined` means
+all three - `listByView` handles it in one statement rather than branching. Active Efforts and All
+Efforts sit directly under Project Management, above the lifecycle groups, and the Lifecycle column
+is what distinguishes the rows.
+
+**Records open a form at `/record/<number>`** (`src/components/record-form.tsx`, actions in
+`src/app/records/actions.ts`). It is `/record`, singular and its own segment, because
+`/records/<something>` is already a view key and a number there would have collided. Clicking a row
+navigates; the first cell is still a real link so keyboard, middle-click and hover all work. The
+form edits title, description, assignment and state, promotes forward, and toggles active.
+**Only the current lifecycle's states are offered, and the server re-reads the lifecycle before
+accepting a state** - the form is not trusted. Create new is on every list and carries that view's
+lifecycle; the Efforts views start an Idea. Every action re-checks `has_project_access`.
+
 **List views are a registry, not routes.** `src/lib/views.ts` defines each view as a named filter
 (lifecycle + `activeOnly`); `src/components/nav/nav-items.ts` builds the navigation from it and
 `/records/[view]` resolves the key and runs `listByView`. Adding a view is one entry - the nav, the heading and the query
@@ -276,12 +292,17 @@ operator set, paging (10/20/50/100/500, default 50), compact/comfortable density
 browser, relative dates, empty state with a reset, and CSV export of every matching row (capped at
 10,000, formula-safe, permission re-checked).
 
-Not built: the ☰ list menu, filter builder (AND/OR/NOT), column chooser, group by, right-click
-actions, breadcrumbs, saved views and filters, the ✨ AI assistant, and the phone/tablet card
-layout. The toolbar order is also not the standard's.
+Since added: the ☰ list menu (column chooser, row spacing, export, reset), chosen columns
+remembered per list per browser, clickable rows, Create new, and the phone/tablet card layout with
+Sort by. Hiding a column clears any search on it - otherwise the list is filtered by something
+invisible. The pager wraps and drops First/Last below 640px.
 
-**Adopting Appendix A means adding shadcn/ui to Northstar**, which it does not use today. That is
-Ryan's call, and until it is made, do not add a second hand-written table: extend the shared one.
+Not built: filter builder (AND/OR/NOT), group by, right-click actions, breadcrumbs, saved views and
+filters, and the ✨ AI assistant.
+
+**Ryan's call (2026-11-18): do not rebuild from Appendix A.** It would mean adding shadcn/ui, and he
+asked not to over-complicate it. So the hand-written view stays and will differ from CS Tracker in
+places. Do not add a second table - extend the shared one.
 
 Two rules from that standard are non-negotiable and easy to get wrong: **every AI answer's numbers
 come from a real query, never from the model reading rows**, and **nothing from a column marked
@@ -356,6 +377,9 @@ Claude admin console, not here.
 | 2026-11-18 | Navigator built to `docs/standards/left-navigator.md`, with navy as the light-mode nav primary | Gold measures 1.77:1 against the standard's 4.5:1 requirement |
 | 2026-11-18 | Navigator brought up to standard v1.3: tabs, favourites, history, drag-to-resize, standard drawer | Ryan asked for Northstar to match the CS Tracker navigator, including the new features |
 | 2026-11-18 | Navigator width: 240px default, people drag it from 200 to 400px | Ryan first asked for wider, then chose resizable with the original default |
+| 2026-11-18 | Keep the hand-written list view; do not adopt Appendix A or shadcn/ui | Ryan's call: don't over-complicate it. Accepts some drift from CS Tracker |
+| 2026-11-18 | Active Efforts / All Efforts span every lifecycle, above the lifecycle groups | Ryan wants one place to see everything; the Lifecycle column tells them apart |
+| 2026-11-18 | Records open a form at `/record/<number>`, not inside `/records/<view>` | A view key and a record number would have collided in the same segment |
 | 2026-11-18 | List views built by hand from standard v1.0, before Appendix A existed | A stop-gap. v1.1 says to copy the reference code; adopting it needs shadcn/ui, which is Ryan's call |
 | 2026-11-18 | Demo records seeded in a migration, marked `created_by = 'demo seed'` | The list views needed content; the marker means one statement removes it all |
 | 2026-11-18 | List view standard v1.1 copied from cs-tracker, its home | Checked against the CS Tracker code, with full reference code; cs-tracker keeps the master copy |
@@ -376,8 +400,6 @@ Claude admin console, not here.
 
 ## 10. Open questions for Ryan
 
-- [ ] Rebuild the list view from the standard's Appendix A (adds shadcn/ui), or keep the
-      hand-written one and accept it differs from CS Tracker?
 - [ ] Demo date.
 - [ ] Welcome video file (Gemini, ~60s) — then set `NEXT_PUBLIC_WELCOME_VIDEO_URL`.
 - [ ] Ask Identity to turn **Assignment required OFF**; Northstar now gates access itself.
