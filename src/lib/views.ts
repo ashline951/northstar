@@ -18,11 +18,35 @@ export type RecordView = {
   label: string;
   /** Heading on the page. */
   title: string;
-  lifecycle: Lifecycle;
+  /** Undefined means every lifecycle - see EFFORT_VIEWS. */
+  lifecycle?: Lifecycle;
   /** true = active only; false = active and inactive. */
   activeOnly: boolean;
   description: string;
 };
+
+/**
+ * Everything, whatever its lifecycle. An effort is an idea, a demand or a
+ * project - the same record at a different stage - so these sit above the
+ * lifecycle groups rather than inside one. The Lifecycle column is what tells
+ * them apart, and it is in the registry already.
+ */
+export const EFFORT_VIEWS: RecordView[] = [
+  {
+    key: "efforts-active",
+    label: "Active Efforts",
+    title: "Active Efforts",
+    activeOnly: true,
+    description: "Every idea, demand and project still in play.",
+  },
+  {
+    key: "efforts-all",
+    label: "All Efforts",
+    title: "All Efforts",
+    activeOnly: false,
+    description: "Every effort, at any stage, active and inactive.",
+  },
+];
 
 export const VIEW_GROUPS: { lifecycle: Lifecycle; views: RecordView[] }[] = [
   {
@@ -90,7 +114,10 @@ export const VIEW_GROUPS: { lifecycle: Lifecycle; views: RecordView[] }[] = [
   },
 ];
 
-export const VIEWS: RecordView[] = VIEW_GROUPS.flatMap((g) => g.views);
+export const VIEWS: RecordView[] = [
+  ...EFFORT_VIEWS,
+  ...VIEW_GROUPS.flatMap((g) => g.views),
+];
 
 export function viewByKey(key: string): RecordView | undefined {
   return VIEWS.find((v) => v.key === key);

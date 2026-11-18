@@ -209,6 +209,8 @@ export type WireColumn = {
 export type WireRow = {
   id: number;
   cells: Record<string, string>;
+  /** Where clicking the row goes; omitted when rows are not clickable. */
+  href?: string;
 };
 
 export function wireColumns<Row>(def: ListDef<Row>): WireColumn[] {
@@ -222,10 +224,12 @@ export function wireColumns<Row>(def: ListDef<Row>): WireColumn[] {
 
 export function wireRows<Row extends { id: number }>(
   def: ListDef<Row>,
-  rows: Row[]
+  rows: Row[],
+  href?: (row: Row) => string
 ): WireRow[] {
   return rows.map((row) => ({
     id: row.id,
     cells: Object.fromEntries(def.columns.map((c) => [c.key, c.value(row)])),
+    href: href?.(row),
   }));
 }

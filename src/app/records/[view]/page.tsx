@@ -5,7 +5,7 @@ import AppShell from "@/components/AppShell";
 import ServiceUnavailable from "@/components/ServiceUnavailable";
 import ListView from "@/components/list-view/list-view";
 import { lookupUser } from "@/lib/users";
-import { listByView } from "@/lib/records";
+import { displayNumber, listByView } from "@/lib/records";
 import { RECORDS_LIST } from "@/lib/list-view/registry";
 import {
   applyQuery,
@@ -81,14 +81,24 @@ export default async function RecordListPage({
   return (
     <AppShell>
       <ListView
+        listId={RECORDS_LIST.id}
         columns={wireColumns(RECORDS_LIST)}
-        rows={wireRows(RECORDS_LIST, page)}
+        rows={wireRows(
+          RECORDS_LIST,
+          page,
+          // `from` brings people back to the list they started in.
+          (r) => `/record/${displayNumber(r)}?from=${view.key}`
+        )}
         noun={RECORDS_LIST.noun}
         total={matched.length}
         query={query}
         title={view.title}
         description={view.description}
         exportHref={`/api/records/${view.key}/export?${exportParams.toString()}`}
+        createHref={`/record/new?from=${view.key}${
+          view.lifecycle ? `&lifecycle=${view.lifecycle}` : ""
+        }`}
+        createLabel={`New ${view.lifecycle ?? "Idea"}`}
       />
     </AppShell>
   );

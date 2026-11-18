@@ -4,10 +4,11 @@ import {
   ListChecks,
   FolderKanban,
   Layers,
+  Rocket,
   ShieldCheck,
   type LucideIcon,
 } from "lucide-react";
-import { VIEW_GROUPS } from "@/lib/views";
+import { EFFORT_VIEWS, VIEW_GROUPS } from "@/lib/views";
 
 /**
  * The left-hand navigation, in the shape the cs-tracker uses: an item with
@@ -46,13 +47,20 @@ const recordGroups: NavItem[] = VIEW_GROUPS.map((g) => ({
  * sits alongside as its own workspace - when PPM joins a larger platform, other
  * applications become siblings of this entry rather than being bolted under it.
  */
+const effortViews: NavItem[] = EFFORT_VIEWS.map((v) => ({
+  title: v.label,
+  href: `/records/${v.key}`,
+  icon: Rocket,
+}));
+
 export const NAV_ITEMS: NavItem[] = [
   { title: "Home", href: "/", icon: House },
   {
     title: "Project Management",
-    href: `/records/${VIEW_GROUPS[0].views[0].key}`,
+    href: `/records/${EFFORT_VIEWS[0].key}`,
     icon: Layers,
-    children: recordGroups,
+    // Everything first, then the lifecycle groups.
+    children: [...effortViews, ...recordGroups],
   },
   { title: "Northstar Project", href: "/project", icon: FolderKanban },
   { title: "Admin", href: "/admin", icon: ShieldCheck, adminOnly: true },

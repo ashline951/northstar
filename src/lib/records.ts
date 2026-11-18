@@ -111,10 +111,10 @@ export async function createRecord(params: {
   assignedTo: string | null;
   assignedGroup: string | null;
   createdBy: string;
-}): Promise<void> {
+}): Promise<NorthstarRecord | null> {
   // The suffix is minted in SQL so the sequence is atomic: two people adding
   // at once cannot collide. Two-digit year plus a five-digit sequence.
-  await sql`
+  const rows = (await sql`
     insert into northstar_records
       (suffix, lifecycle, state, title, description, assigned_to, assigned_group, created_by)
     values (
@@ -127,7 +127,9 @@ export async function createRecord(params: {
       ${params.assignedGroup},
       ${params.createdBy}
     )
-  `;
+    returning *
+  `) as NorthstarRecord[];
+  return rows[0] ?? null;
 }
 
 export async function setState(id: number, state: string): Promise<void> {
@@ -141,12 +143,23 @@ export async function setState(id: number, state: string): Promise<void> {
 
 export async function updateRecord(
   id: number,
-  fields: { assignedTo: string | null; assignedGroup: string | null }
+  fields: {
+    assignedTo: string | null;
+    assignedGroup: string | null;
+    /** Left undefined by callers that only change the assignment. */
+    title?: string;
+    description?: string | null;
+  }
 ): Promise<void> {
   await sql`
     update northstar_records
     set assigned_to = ${fields.assignedTo},
         assigned_group = ${fields.assignedGroup},
+        title = coalesce(${fields.title ?? null}, title),
+        description = case
+          when ${fields.description === undefined} then description
+          else ${fields.description ?? null}
+        end,
         updated_at = now()
     where id = ${id}
   `;
@@ -207,12 +220,15 @@ export async function historyFor(id: number): Promise<HistoryRow[]> {
  * inactive together, which is what "All Demands" means.
  */
 export async function listByView(
-  lifecycle: Lifecycle,
+  lifecycle: Lifecycle | undefined,
   activeOnly: boolean
 ): Promise<NorthstarRecord[]> {
+  // No lifecycle means every lifecycle - the Efforts views, which show Ideas,
+  // Demands and Projects together. Passing null rather than branching keeps it
+  // to one statement.
   return (await sql`
     select * from northstar_records
-    where lifecycle = ${lifecycle}
+    where (${lifecycle ?? null}::text is null or lifecycle = ${lifecycle ?? null})
       and (${activeOnly} = false or is_active = true)
     order by suffix desc
   `) as NorthstarRecord[];
