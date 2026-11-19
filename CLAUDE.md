@@ -270,7 +270,10 @@ is what distinguishes the rows.
 navigates; the first cell is still a real link so keyboard, middle-click and hover all work. The
 form opens **read-only**; Edit (or `?edit=1`) turns the same layout into inputs, nothing moves,
 Save returns to read-only and Cancel discards. Promote and Mark inactive are decisions, not
-edits, so they sit outside the form and only in view mode. **Assigned to is a picker over the
+edits, so they sit outside the form and only in view mode. **A side panel** (`record-panel.tsx`)
+sits beside the record, top-aligned and sticky on desktop and **above** the record on a phone,
+never beneath it (Ryan). An icon rail picks the tab - Activity (history, newest first) and Details
+for now; the rail is a list so documents, financials and the rest can be added as the record grows. **Assigned to is a picker over the
 active roster** (stored as the email; an unknown assignee on a seeded record is kept as an option
 rather than silently reassigned); **Assignment group is a datalist** of groups in use, so a new one
 can still be typed. **Only the current lifecycle's states are offered, and the server re-reads
@@ -430,6 +433,7 @@ Claude admin console, not here.
 | 2026-11-19 | List view completed to standard v1.1 without shadcn/ui; `Assigned to` marked private | Ryan: build to the standards, don't ask. A staff email is a person identifier under 14.4 |
 | 2026-11-19 | List AI on `claude-opus-5-5` at medium effort; guide assistant stays on Haiku | The standard names it; the two assistants do different jobs |
 | 2026-11-19 | List filtering stays in memory on the server for the POC | The filter model matches the standard, so moving to SQL later is a translation |
+| 2026-11-19 | Record page gets an icon-tab side panel, top-right on desktop, above the form on phones | Ryan chose layout 3 from the mock-ups; panel at the top, not below |
 | 2026-11-19 | Record form opens read-only with an Edit mode; person picker and group datalist | Ryan asked for a form that reads like a form, not a wall of inputs; one layout for both modes so nothing moves |
 | 2026-11-19 | Nav groups open when the current page is inside them | Ryan asked. A group that hides where you are leaves the navigator unable to answer "where am I" |
 | 2026-11-19 | Grouped lists are not paged, and cap at 2000 rows / 200 groups | Group counts have to be real totals, not per-page counts |
