@@ -56,7 +56,7 @@ export default function ListView({
   total,
   query,
   title,
-  description,
+  trail,
   exportHref,
   createHref,
   createLabel,
@@ -67,8 +67,20 @@ export default function ListView({
   noun: string;
   total: number;
   query: ListQuery;
+  /** The table's name ("Demands"), never a view's ("Active Demands"). */
   title: string;
-  description?: string;
+  /**
+   * The breadcrumb trail under the toolbar (list view standard 11, 11a):
+   * "All", then the view's own filter steps, then the column searches.
+   */
+  trail: {
+    /** The table with no filter: what "All" opens. */
+    allHref: string;
+    /** The view's own filter, e.g. ["Active is Yes"]. */
+    viewSteps: string[];
+    /** The same table without the view's filter (searches and sort kept). */
+    withoutViewHref: string;
+  };
   exportHref: string;
   /** Omitted when the list has nothing to create. */
   createHref?: string;
@@ -184,11 +196,6 @@ export default function ListView({
         <h1 className="ns-display text-[24px] leading-tight text-[var(--ns-text-primary)]">
           {title}
         </h1>
-        {description && (
-          <span className="text-sm text-[var(--ns-text-secondary)]">
-            {description}
-          </span>
-        )}
 
         <span className="flex-1" />
 
@@ -257,34 +264,38 @@ export default function ListView({
         )}
       </div>
 
-      {(crumbs.length > 0 || query.groupKey) && (
-        <div className="flex flex-wrap items-center gap-2 border-b border-[var(--ns-border-subtle)] px-4 py-1.5">
-          <Filter aria-hidden className="size-3.5 text-[var(--ns-text-secondary)]" />
-          {query.groupKey && (
-            <Chip
-              label="Grouped by"
-              value={groupedCol?.label ?? query.groupKey}
-              onRemove={() => go({ group: null })}
-            />
-          )}
-          {crumbs.map((c) => (
-            <Chip
-              key={c.key}
-              label={c.label}
-              value={c.term}
-              onRemove={() => go({ [`q_${c.key}`]: null })}
-            />
-          ))}
-          {crumbs.length > 1 && (
-            <button
-              onClick={() => router.push("?")}
-              className="text-sm text-[var(--ns-nav-primary)] underline-offset-2 hover:underline"
-            >
-              Clear all
-            </button>
-          )}
-        </div>
-      )}
+      {/* The breadcrumb trail, always shown, like ServiceNow (Ryan, 2026-11-19):
+          All > the view's filter > the column searches. The title above names
+          the table; this says which rows of it you're looking at. */}
+      <Trail
+        allHref={trail.allHref}
+        steps={[
+          ...trail.viewSteps.map((text) => ({
+            text,
+            // Cutting back to the view's step drops the searches after it.
+            cut: () => go(Object.fromEntries(crumbs.map((c) => [`q_${c.key}`, null]))),
+            remove: () => {
+              const rest = new URLSearchParams(params.toString());
+              rest.delete("page");
+              const qs = rest.toString();
+              router.push(`${trail.withoutViewHref}${qs ? `?${qs}` : ""}`);
+            },
+          })),
+          ...crumbs.map((c, i) => ({
+            text: describeSearch(c.label, c.term),
+            cut: () => go(Object.fromEntries(crumbs.slice(i + 1).map((d) => [`q_${d.key}`, null]))),
+            remove: () => go({ [`q_${c.key}`]: null }),
+          })),
+        ]}
+      >
+        {query.groupKey && (
+          <Chip
+            label="Grouped by"
+            value={groupedCol?.label ?? query.groupKey}
+            onRemove={() => go({ group: null })}
+          />
+        )}
+      </Trail>
 
       <div aria-live="polite" className="sr-only">
         {filtered
@@ -658,7 +669,89 @@ function ListMenu({
 }
 
 
-/** One breadcrumb: what is filtering the list, and a way to drop it. */
+/** A column search in words: "Title contains roof", "Status is not Closed". */
+function describeSearch(label: string, term: string): string {
+  const not = term.startsWith("!");
+  const t = not ? term.slice(1) : term;
+  if (t.startsWith("=")) {
+    const v = t.slice(1);
+    if (!v) return `${label} ${not ? "is not empty" : "is empty"}`;
+    return `${label} ${not ? "is not" : "is"} ${v}`;
+  }
+  if (/[*%?]/.test(t)) return `${label} ${not ? "doesn't match" : "matches"} ${t}`;
+  return `${label} ${not ? "doesn't contain" : "contains"} ${t}`;
+}
+
+/**
+ * The breadcrumb trail (list view standard 11): "All" first (the whole table),
+ * then each step. Selecting a step cuts the trail back to it; × removes one
+ * step; the last step is plain text (where you are).
+ */
+function Trail({
+  allHref,
+  steps,
+  children,
+}: {
+  allHref: string;
+  steps: { text: string; cut: () => void; remove: () => void }[];
+  children?: React.ReactNode;
+}) {
+  const link =
+    "min-h-7 rounded-md px-1.5 text-base font-medium text-[var(--ns-nav-primary)] underline-offset-4 outline-none hover:underline focus-visible:ring-3 focus-visible:ring-[var(--ns-text-primary)]";
+  const sep = (
+    <span aria-hidden className="px-0.5 text-[var(--ns-text-secondary)]">
+      &gt;
+    </span>
+  );
+  return (
+    <div className="flex flex-wrap items-center gap-x-3 gap-y-1 border-b border-[var(--ns-border-subtle)] px-4 py-0.5">
+      <nav aria-label="Active filter">
+        <ol className="flex flex-wrap items-center gap-x-0.5 gap-y-0.5">
+          <li className="flex items-center">
+            {steps.length === 0 ? (
+              <span className="px-1.5 text-base text-[var(--ns-text-primary)]" aria-current="true">
+                All
+              </span>
+            ) : (
+              <Link href={allHref} className={link} title="Show every row">
+                All
+              </Link>
+            )}
+          </li>
+          {steps.map((step, i) => {
+            const last = i === steps.length - 1;
+            return (
+              <li key={i} className="flex items-center gap-0.5">
+                {sep}
+                {last ? (
+                  <span className="px-1.5 text-base text-[var(--ns-text-primary)]" aria-current="true">
+                    {step.text}
+                  </span>
+                ) : (
+                  <button type="button" className={link} onClick={step.cut}>
+                    {step.text}
+                  </button>
+                )}
+                <button
+                  type="button"
+                  onClick={step.remove}
+                  aria-label={`Remove “${step.text}” from the filter`}
+                  title="Remove"
+                  className="flex size-7 items-center justify-center rounded-md text-[var(--ns-text-secondary)] outline-none hover:bg-[var(--ns-nav-hover)] hover:text-[var(--ns-text-primary)] focus-visible:ring-3 focus-visible:ring-[var(--ns-text-primary)]"
+                >
+                  <X aria-hidden className="size-4" />
+                </button>
+              </li>
+            );
+          })}
+        </ol>
+      </nav>
+      {children}
+    </div>
+  );
+}
+
+/** One chip: the grouping in force, and a way to drop it. */
 function Chip({
   label,
   value,

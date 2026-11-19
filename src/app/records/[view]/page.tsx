@@ -14,7 +14,7 @@ import {
   wireColumns,
   wireRows,
 } from "@/lib/list-view/types";
-import { viewByKey } from "@/lib/views";
+import { allViewFor, viewByKey, viewSteps } from "@/lib/views";
 
 export async function generateMetadata({
   params,
@@ -99,7 +99,11 @@ export default async function RecordListPage({
         total={matched.length}
         query={query}
         title={view.title}
-        description={view.description}
+        trail={{
+          allHref: `/records/${allViewFor(view).key}`,
+          viewSteps: viewSteps(view),
+          withoutViewHref: `/records/${allViewFor(view).key}`,
+        }}
         exportHref={`/api/records/${view.key}/export?${exportParams.toString()}`}
         createHref={`/record/new?from=${view.key}${
           view.lifecycle ? `&lifecycle=${view.lifecycle}` : ""

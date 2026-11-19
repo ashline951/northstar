@@ -1,11 +1,12 @@
 # Standard: list views (look, feel, behavior and the AI assistant)
 
-**Status:** LLUH app standard, **v1.1** (2026-11-18). Owner: Ryan Ashline. Reference build: CS Tracker. The full reference code is in **Appendix A** at the end of this file.
+**Status:** LLUH app standard, **v1.2** (2026-11-19). Owner: Ryan Ashline. Reference build: CS Tracker. The full reference code is in **Appendix A** at the end of this file.
 
 | Version | Date | Change |
 |---|---|---|
 | 1.0 | 2026-11-18 | First version, written in North Star from the CS Tracker build: features, operators, filter builder, AI assistant, data model (described only). |
 | 1.1 | 2026-11-18 | Checked line by line against the CS Tracker code and corrected (sizes, ☰ menu order, toolbar order, comparisons, CSV limit, where settings are remembered, AI panel). Adds wireframes, every text string, exact classes, the URL format, grouping/right-click/breadcrumb rules, the AI event protocol, a build order, adapting to other stacks, and the complete reference code (Appendix A). **Also fixes a privacy gap found in the check:** filter and search values typed into private columns are no longer described to the AI (section 14.4). |
+| 1.2 | 2026-11-19 | **The title names the table; the filter is always shown beneath it as a breadcrumb trail starting with "All"**, like ServiceNow (Ryan). Preset views ("Active Demands") are **shortcuts** that open the table with a filter, not separate lists (section 11a). |
 
 ---
 
@@ -35,7 +36,8 @@ You are adding the standard LLUH list view to an app. Staff move between LLUH ap
 | 3 | **Column chooser** | Slush bucket (Available / Selected), order with buttons, saved per person on the server. |
 | 4 | **Per-column search** | A box under every header with the operators in section 9; Enter runs it. |
 | 5 | **Filter builder** | AND / OR / NOT, nested groups (3 levels, 30 conditions), comparisons per column type. |
-| 6 | **Breadcrumbs** | The filter as removable steps, shown only while a filter is on. |
+| 6 | **Title + breadcrumb trail** | The title is the table's name ("Demands"); beneath the toolbar, always, the filter as a trail: **All > Step > Step**, each step removable, All clears it. |
+| 6a | **Shortcuts (preset views)** | Menu entries like "Active Demands" open the table with that filter applied; the title stays "Demands" and the trail shows the filter. |
 | 7 | **Sort** | Any column; only the sorted column shows an arrow; phones get a "Sort by" control. |
 | 8 | **Group by** | One column; collapsible group rows with counts; "Grouped by" chip with Open all / Close all / stop. |
 | 9 | **Right-click a value** | Show matching / Filter out / Copy. |
@@ -59,7 +61,7 @@ You are adding the standard LLUH list view to an app. Staff move between LLUH ap
 ├──────────────┬──────────────────────────────────────────────────────────────────────┤
 │ NAVIGATOR    │ <main class="w-full min-w-0 flex-1 px-4 py-2 sm:px-6">               │
 │ (left-       │   TOOLBAR  (one row; wraps if it must)                               │
-│ navigator    │   BREADCRUMBS (only while filtered; on the toolbar row on desktop)   │
+│ navigator    │   BREADCRUMB TRAIL (always): All > Status is Active > …             │
 │ standard)    │   FILTER BUILDER (only while open)                                   │
 │              │   TABLE (desktop, ≥1024 px)  /  CARDS (phones and tablets)           │
 │              │                                                    AI PANEL ──────▶ │
@@ -78,6 +80,7 @@ You are adding the standard LLUH list view to an app. Staff move between LLUH ap
 
 ```text
  ☰  ⛛  ☆  ✨  Orders                            Rows [50 ▾]  1–50 of 54 orders  « ‹ [1] 2 › »  [+ Add]
+ All                                                                     ← the trail: "All" alone = no filter
 ┌────┬──────────────────┬──────────┬──────────┬─────────────┬───────────────┬──────────────────────┐
 │ 🔍 │ Patient          │ Unit     │ Bed      │ Status      │ Substatus     │ Ordered ↓            │ header 32 px, 2 px rule
 ├────┼──────────────────┼──────────┼──────────┼─────────────┼───────────────┼──────────────────────┤
@@ -92,10 +95,11 @@ You are adding the standard LLUH list view to an app. Staff move between LLUH ap
   search toggle 🔍 (and a × "Clear search" while any search is on).
 ```
 
-**Filtered (breadcrumbs on the toolbar row), and grouped:**
+**Filtered (the trail under the title), and grouped:**
 
 ```text
- ☰  ⛛•  ☆  ✨  Orders   Unit is EMER > Status is Pending ×    [Grouped by Unit (12)  Open all  Close all  ×]   Rows …
+ ☰  ⛛•  ☆  ✨  Orders   [Grouped by Unit (12)  Open all  Close all  ×]                                     Rows …
+ All > Unit is EMER × > Status is Pending ×        ← links in brand color; the last step is plain text (current)
 ┌────┬────────────────────────────────────────────────────────────────────────────────────────────┐
 │ ▸  │ Unit: EMER (33)                                                                            │ group row (closed)
 │ ▾  │ Unit: MUR4MS (3)                                                                           │ (open)
@@ -232,13 +236,14 @@ You are adding the standard LLUH list view to an app. Staff move between LLUH ap
 2. **⛛ Filter** (funnel): opens/closes the builder. While a filter is on: a 8 px brand dot at its top right, the icon in brand color with a light fill, and the name "Filter (on)".
 3. **☆ Favorites** (saved filters). Brand color and a filled star while a saved filter is in use.
 4. **✨ Ask AI** (gold sparkle).
-5. **Title** (`h1`) = the list's title.
+5. **Title** (`h1`) = **the table's name** ("Orders", "Demands"), never a filtered view's name ("Active Demands"): the filter is shown in the trail.
 6. A screen-reader-only live status: "Updating…" / "9 of 54 match" / "54 orders".
-7. **Breadcrumbs** (only while filtered; full width on phones, inline on desktop).
 8. **"Grouped by" chip** (only while grouped).
 9. Pushed to the right (`ml-auto`): the **pager**, then the page's **actions** (e.g. "Add person") at the far right.
 
 **The count never sits next to the title**; it's in the pager ("1–50 of 54 orders").
+
+**Breadcrumb trail**, on its own row directly under the toolbar, **always shown** (also with no filter, as just "All"), so the page doesn't jump when a filter is applied (section 11).
 
 **Table** (desktop): header row (2 px rule beneath), search row (open by default), body rows. Every row starts with a narrow unlabeled column (48 px) that holds the search toggle in the header and the "Clear search" × in the search row.
 
@@ -260,7 +265,7 @@ You are adding the standard LLUH list view to an app. Staff move between LLUH ap
 | Dates | 14 px, then 12 px "3 weeks ago" | same | `text-sm leading-4` / `text-xs leading-4 text-muted-foreground` |
 | Long text (compact, text columns over 40 characters) | cut at 448 px with "…", full text on hover | wraps | `block max-w-[28rem] truncate` + `title` |
 | Group row | 32 px toggle, 20 px chevron | same | `min-h-8`, chevron `size-5` |
-| Breadcrumb steps / remove | 36 px tall / 36 × 36 px | same | `min-h-9` / `size-9` |
+| Breadcrumb trail | one row under the toolbar (2 px gap); steps 28 px tall, 16 px text; remove × 28 × 28 px with a 16 px icon | same | `mt-0.5`; `min-h-7 px-1.5 text-base`; `size-7` |
 | Menus (☰ ★) | 320 px wide | same | `w-80` |
 | Right-click menu items | 36 px tall, 20 px icons, at least 256 px wide | same | `min-h-9` |
 | Filter builder fields, column picker arrows | 44 px (gloves) | same | shadcn defaults |
@@ -307,7 +312,7 @@ Never put the brand color on ordinary cell text or whole-row backgrounds.
 | Clear searches | "Clear search" |
 | Sort header | tooltip "Sort by {column}"; screen readers ", sorted A to Z" / ", sorted Z to A" / ", select to sort" |
 | Phones | "Search" / "Hide search" · "Search" / "Searching…" · "Clear search" · help "Press Enter or Search. Rows must match every box you fill in; capitals don't matter." · "Sort by" with "{column} (A to Z)" / "(Z to A)" / "(oldest first)" / "(newest first)" |
-| Breadcrumbs | region "Active filter"; separator ">" ("or" when matching any); "not" before excluded groups; remove "Remove “{step}” from the filter" (tooltip "Remove"); dates as "Oct 28, 2026" |
+| Breadcrumb trail | region "Active filter"; first step "All" (tooltip "Show all {noun}"); separator ">" ("or" between steps when matching any); "not" after All for excluded filters; remove "Remove “{step}” from the filter" (tooltip "Remove"); dates as "Oct 28, 2026" |
 | Empty | "No {noun} yet" / "{Noun} will appear here once they're added." · "No {noun} match" / "Check the spelling, or remove part of the filter or search." / button "Show all {noun}" · loading "Loading {noun}…" |
 | ☰ menu | "Choose columns…" · "Group by…" · "Export CSV" · "Reset to default" (sub-line "You're using it now") · "Set as default for everyone…" · "Row spacing (this browser)" · "Compact rows" · "Comfortable rows (tablets, gloves)" |
 | ☰ confirmations (screen readers) | "Your columns, sort and filter are back to the default." · "Saved as the default for everyone." |
@@ -380,11 +385,19 @@ Plain text means **contains**. That's the default and must stay the default.
 
 ---
 
-## 11. Breadcrumbs, grouping and right-click
+## 11. Breadcrumb trail, shortcuts, grouping and right-click
 
-**Breadcrumbs** (only while a filter is on):
-- Each top-level condition or group is one step ("Unit contains EMER", "(A and B)", "not (…)"); separator ">" for AND, "or" for OR.
-- Selecting a step keeps the filter up to that step and drops the later ones; the last step is the current one (`aria-current`). Each step has a × to remove just it. There's no "All" step; the funnel's Clear filter (or removing the last step) shows everything.
+**Breadcrumb trail** (always shown, on its own row under the toolbar; like ServiceNow):
+- It starts with **All**, the whole table. Then each top-level condition or group is one step ("Unit is EMER", "(A and B)", "not (…)"), after ">" (or "or" between steps when the filter matches any).
+- **All** is a link that clears the filter (plain text when there's no filter). Selecting a step keeps the filter up to that step and drops the later ones. The last step is plain text, the current one (`aria-current`). Each step has a × to remove just that step.
+- Links are in the brand color (underline on hover); separators and × in the secondary text color.
+- Column searches aren't steps (they're in the search row).
+
+### 11a. Shortcuts (preset views)
+- **The title names the table, not the view.** A list that people commonly open with a filter ("Active Demands", "My open orders") is **one table plus a shortcut**, never a separate list or page with its own title.
+- A shortcut is a menu (navigator) entry that opens the table **with its filter in the URL** (`?filter=…`): the title shows the table ("Demands"), the trail shows the filter (`All > Active is Yes`), and the person can change or remove it like any filter.
+- Keep shortcut names in the navigator ("Active Demands", "All Demands"); they're how people find things. "All {table}" opens the table with no filter (`?filter=all`).
+- Shortcuts are defined in the app's code next to the menu; personal ones are saved filters (★) or navigator favorites.
 
 **Group by** (☰ → Group by…):
 - One column (not multi-value columns). Dates group by day in the app's time zone. Group rows show "{column}: **{value}** ({count})" with a chevron; they start open and open/close on select (not remembered; Close all folds every group). The chip offers **Open all**, **Close all** and × (stop grouping).
@@ -616,6 +629,7 @@ type ListSource = {                           // server side
 
 - Don't build a one-off table for a list. Declare its columns in the registry.
 - Don't put the row count next to the title; it belongs in the pager.
+- Don't name the page after a filter ("Active Demands"); name it after the table and show the filter in the trail.
 - Don't trust anything that arrived from the browser: re-validate every filter, sort, column and search on the server, and pass values to the database as parameters.
 - Don't apply an AI-proposed filter without the person selecting Apply.
 - Don't let anything from a private column reach the model: not a value, not a filter condition, not a search.
@@ -633,7 +647,8 @@ type ListSource = {                           // server side
 - [ ] Compact rows 24 px (36 px with dates) by default; Comfortable option remembered per browser; 16 px text; shaded rows.
 - [ ] Column search with the full operator set, matching displayed words; Enter runs it; Clear search; "not" keeps empty.
 - [ ] Filter builder: AND/OR/NOT, nested to 3 levels, 30 conditions, comparisons per type; applies on Run filter; enforced on the server.
-- [ ] Breadcrumbs with select-to-cut and per-step remove.
+- [ ] Title is the table's name; the breadcrumb trail is always shown under the toolbar, starting with All (clears the filter), with select-to-cut and per-step remove.
+- [ ] Preset views are shortcuts that open the table with a filter (title unchanged, filter in the trail), not separate lists.
 - [ ] Sort with one arrow; phones get Sort by.
 - [ ] Group by with group rows, counts, Open all / Close all / stop, 200-group cap, "Show all".
 - [ ] Right-click Show matching / Filter out / Copy with the rules in section 11.
@@ -1969,6 +1984,7 @@ import {
   columnOf,
   groupCondition,
   describe,
+  EMPTY_FILTER,
   type ColumnMeta,
   type Group,
   type ListGroup,
@@ -2176,7 +2192,6 @@ export function ListView(props: ListViewProps) {
               ? `${matching} of ${total} match`
               : `${total} ${total === 1 ? meta.noun.one : meta.noun.many}`}
         </p>
-        {filtering && <Breadcrumbs meta={meta} filter={filter} onChange={(f) => nav.go({ filter: f })} />}
         {groupColumn && groups && (
           <span className="flex items-center gap-1 rounded-lg bg-muted pl-3 text-base">
             Grouped by <strong className="font-semibold">{groupColumn.label}</strong>
@@ -2221,6 +2236,9 @@ export function ListView(props: ListViewProps) {
           {props.actions}
         </div>
       </div>
+      {/* Like ServiceNow (Ryan, 2026-11-19): the title names the table, and the filter is
+          always shown beneath it as a trail starting with All. */}
+      <Breadcrumbs meta={meta} filter={filter} onChange={(f) => nav.go({ filter: f })} />
       <MobileSort meta={meta} sort={sort} onSort={(s) => nav.go({ sort: s })} />
       {aiOpen && (
         <AiPanel
@@ -2701,24 +2719,48 @@ function MobileSort({ meta, sort, onSort }: { meta: ListMeta; sort: Sort; onSort
  */
 function Breadcrumbs({ meta, filter, onChange }: { meta: ListMeta; filter: Group; onChange: (filter: Group) => void }) {
   const crumb =
-    "min-h-9 rounded-lg px-2 text-base font-medium text-primary underline-offset-4 outline-none hover:underline focus-visible:ring-3 focus-visible:ring-ring";
+    "min-h-7 rounded-md px-1.5 text-base font-medium text-primary underline-offset-4 outline-none hover:underline focus-visible:ring-3 focus-visible:ring-ring";
   const separator = filter.match === "any" ? "or" : ">";
+  const sep = (text: string) => (
+    <span aria-hidden className="px-0.5 text-muted-foreground">
+      {text}
+    </span>
+  );
+  const none = filter.items.length === 0;
   return (
-    <nav aria-label="Active filter" className="basis-full lg:basis-auto">
-      <ol className="flex flex-wrap items-center gap-x-1 gap-y-1">
-        {filter.exclude && filter.items.length > 0 && <li className="px-1 text-base font-semibold">not</li>}
+    <nav aria-label="Active filter" className="mt-0.5">
+      <ol className="flex flex-wrap items-center gap-x-0.5 gap-y-0.5">
+        {/* "All" is always first: the whole table. Selecting it clears the filter. */}
+        <li className="flex items-center">
+          {none ? (
+            <span className="px-1.5 text-base" aria-current="true">
+              All
+            </span>
+          ) : (
+            <button
+              type="button"
+              className={crumb}
+              onClick={() => onChange(EMPTY_FILTER)}
+              title={`Show all ${meta.noun.many}`}
+            >
+              All
+            </button>
+          )}
+        </li>
+        {filter.exclude && !none && (
+          <li className="flex items-center gap-0.5">
+            {sep(">")}
+            <span className="px-1 text-base font-semibold">not</span>
+          </li>
+        )}
         {filter.items.map((item, i) => {
           const text = describe(meta, item);
           const last = i === filter.items.length - 1;
           return (
-            <li key={i} className="flex items-center gap-1">
-              {i > 0 && (
-                <span aria-hidden className="px-1 text-muted-foreground">
-                  {separator}
-                </span>
-              )}
+            <li key={i} className="flex items-center gap-0.5">
+              {sep(i === 0 ? ">" : separator)}
               {last ? (
-                <span className="px-2 text-base" aria-current="true">
+                <span className="px-1.5 text-base" aria-current="true">
                   {text}
                 </span>
               ) : (
@@ -2735,7 +2777,7 @@ function Breadcrumbs({ meta, filter, onChange }: { meta: ListMeta; filter: Group
                 onClick={() => onChange({ ...filter, items: filter.items.filter((_, j) => j !== i) })}
                 aria-label={`Remove “${text}” from the filter`}
                 title="Remove"
-                className="flex size-9 items-center justify-center rounded-lg text-muted-foreground outline-none hover:bg-accent hover:text-foreground focus-visible:ring-3 focus-visible:ring-ring"
+                className="flex size-7 items-center justify-center rounded-md text-muted-foreground outline-none hover:bg-accent hover:text-foreground focus-visible:ring-3 focus-visible:ring-ring"
               >
                 <X aria-hidden className="size-4" />
               </button>
