@@ -1,12 +1,13 @@
 # Standard: list views (look, feel, behavior and the AI assistant)
 
-**Status:** LLUH app standard, **v1.2** (2026-11-19). Owner: Ryan Ashline. Reference build: CS Tracker. The full reference code is in **Appendix A** at the end of this file.
+**Status:** LLUH app standard, **v1.3** (2026-11-19). Owner: Ryan Ashline. Reference build: CS Tracker. The full reference code is in **Appendix A** at the end of this file.
 
 | Version | Date | Change |
 |---|---|---|
 | 1.0 | 2026-11-18 | First version, written in North Star from the CS Tracker build: features, operators, filter builder, AI assistant, data model (described only). |
 | 1.1 | 2026-11-18 | Checked line by line against the CS Tracker code and corrected (sizes, ☰ menu order, toolbar order, comparisons, CSV limit, where settings are remembered, AI panel). Adds wireframes, every text string, exact classes, the URL format, grouping/right-click/breadcrumb rules, the AI event protocol, a build order, adapting to other stacks, and the complete reference code (Appendix A). **Also fixes a privacy gap found in the check:** filter and search values typed into private columns are no longer described to the AI (section 14.4). |
 | 1.2 | 2026-11-19 | **The title names the table; the filter is always shown beneath it as a breadcrumb trail starting with "All"**, like ServiceNow (Ryan). Preset views ("Active Demands") are **shortcuts** that open the table with a filter, not separate lists (section 11a). |
+| 1.3 | 2026-11-19 | **Values are picked from a list, not typed** (Ryan): choice columns offer their options as a dropdown, and text columns with repeating values (Status, Unit) can be marked `pick` so the filter offers the values found in the data (section 10a). |
 
 ---
 
@@ -377,10 +378,19 @@ Plain text means **contains**. That's the default and must stay the default.
 |---|---|---|
 | text | contains, doesn't contain, is, is not, starts with, ends with, is empty, is not empty | text, max 200 characters |
 | date | on, before, after, is empty, is not empty | date picker; compared by the day in the app's time zone |
-| choice | is, is not, is empty, is not empty | one of the column's options |
+| choice | is, is not, is empty, is not empty | **a dropdown** of the column's options ("Choose…"); the server rejects anything else |
 | multi | includes, doesn't include, is empty, is not empty | one of the column's options |
 
 - Conditions with an empty value are skipped. Switching to another text column keeps the value; switching to another type clears it.
+
+### 10a. Pick values from a list, don't type them
+People expect to pick a State or a Unit, like a ServiceNow choice field, not to type it and hope the spelling matches.
+- **Choice columns must declare their options** in the registry (value + the words people see). A choice column without options falls back to a free-text box: that's a bug, not a style.
+- When a list shows only part of a table (e.g. one lifecycle), narrow the options to the values that can appear there (e.g. only that lifecycle's states).
+- **Text columns with a short set of repeating values** (Status, Substatus, Unit: values that came from another system as text, with no fixed list) are marked **`pick: true`**. The list page looks up their **distinct values in the data** (as shown on screen, sorted, at most 300; never for private columns) and the filter builder offers them:
+  - choosing the column starts at **is**; for **is / is not** the value is a **dropdown** ("Choose…") of those values;
+  - for **contains, starts with, ends with…** it stays a text box, with the values as **typing suggestions**.
+- Free text (names, notes, titles) stays a text box.
 - **Negations keep rows whose value is empty** ("Leave out bed 3x" keeps rows with no bed; "Unit is not EMER" keeps rows with no unit).
 
 ---
@@ -562,6 +572,8 @@ type ColumnMeta = {
   type: ColumnType;                           // picks comparisons, matching and display
   options?: { value: string; label: string }[]; // choice/multi: stored code and the words people see
   searchHint?: string;                        // search box placeholder, e.g. "e.g. EMER"
+  pick?: boolean;                             // text column with repeating values: filter offers the data's values (10a)
+  values?: string[];                          // filled in by the server for pick columns (distinct values, ≤ 300)
   private?: boolean;                          // patient/person identifier: never reaches the AI
 };
 type ListMeta = { id: string; title: string; noun: { one: string; many: string }; columns: ColumnMeta[]; defaultLayout: Layout };
@@ -647,6 +659,7 @@ type ListSource = {                           // server side
 - [ ] Compact rows 24 px (36 px with dates) by default; Comfortable option remembered per browser; 16 px text; shaded rows.
 - [ ] Column search with the full operator set, matching displayed words; Enter runs it; Clear search; "not" keeps empty.
 - [ ] Filter builder: AND/OR/NOT, nested to 3 levels, 30 conditions, comparisons per type; applies on Run filter; enforced on the server.
+- [ ] Values are picked, not typed: every choice column has its options (dropdown); text columns with repeating values are `pick` (dropdown for is / is not, suggestions otherwise).
 - [ ] Title is the table's name; the breadcrumb trail is always shown under the toolbar, starting with All (clears the filter), with select-to-cut and per-step remove.
 - [ ] Preset views are shortcuts that open the table with a filter (title unchanged, filter in the trail), not separate lists.
 - [ ] Sort with one arrow; phones get Sort by.
@@ -746,6 +759,7 @@ import { sql, type SQL } from "drizzle-orm";
 import type { AnyPgColumn } from "drizzle-orm/pg-core";
 import { schema } from "@/db";
 import type { ListSource } from "@/lib/list-view/server";
+import { STANDARD_LABELS } from "@/lib/medical-models";
 import { ROLES } from "@/lib/roles";
 
 /**
@@ -773,12 +787,12 @@ const orders: ListSource = {
       { key: "patientName", label: "Patient", type: "text", searchHint: "e.g. Smith", private: true },
       { key: "mrn", label: "MRN", type: "text", private: true },
       { key: "csn", label: "CSN", type: "text", private: true },
-      { key: "unit", label: "Unit", type: "text", searchHint: "e.g. EMER" },
+      { key: "unit", label: "Unit", type: "text", searchHint: "e.g. EMER", pick: true },
       { key: "room", label: "Room", type: "text" },
       { key: "bed", label: "Bed", type: "text", searchHint: "e.g. 7C 724" },
       { key: "location", label: "Location", type: "text" },
-      { key: "status", label: "Status", type: "text", searchHint: "e.g. pending" },
-      { key: "substatus", label: "Substatus", type: "text", searchHint: "e.g. awaiting rental" },
+      { key: "status", label: "Status", type: "text", searchHint: "e.g. pending", pick: true },
+      { key: "substatus", label: "Substatus", type: "text", searchHint: "e.g. awaiting rental", pick: true },
       { key: "assignedTo", label: "Assigned to", type: "text" },
       { key: "requisition", label: "Requisition", type: "text", private: true },
       { key: "notes", label: "Notes", type: "text", private: true },
@@ -875,7 +889,69 @@ const people: ListSource = {
   },
 };
 
-export const LISTS: Record<string, ListSource> = { orders, people };
+/** A true/false column shown, filtered and searched as "Yes" / "No". */
+function yesNo(column: AnyPgColumn): SQL {
+  return sql`case when ${column} then 'yes' else 'no' end`;
+}
+const YES_NO = [
+  { value: "yes", label: "Yes" },
+  { value: "no", label: "No" },
+];
+
+const mm = schema.medicalModels;
+const medicalModels: ListSource = {
+  path: "/lists/medical-models",
+  table: mm,
+  id: mm.id,
+  // Admins get the edit form; everyone else a read-only page.
+  rowHref: (id) => `/lists/medical-models/${id}`,
+  meta: {
+    id: "medical-models",
+    title: "Medical models",
+    noun: { one: "medical model", many: "medical models" },
+    columns: [
+      { key: "name", label: "Name", type: "text", searchHint: "e.g. pump" },
+      { key: "manufacturer", label: "Manufacturer", type: "text" },
+      { key: "modelNumber", label: "Model number", type: "text" },
+      { key: "cart", label: "Cart", type: "choice", options: YES_NO, searchHint: "yes or no" },
+      { key: "phi", label: "PHI", type: "choice", options: YES_NO, searchHint: "yes or no" },
+      { key: "pii", label: "PII", type: "choice", options: YES_NO, searchHint: "yes or no" },
+      {
+        key: "standard",
+        label: "Standard",
+        type: "choice",
+        options: Object.entries(STANDARD_LABELS).map(([value, label]) => ({ value, label })),
+        searchHint: "e.g. GMDN",
+      },
+      { key: "standardValue", label: "Standard value", type: "text", searchHint: "e.g. FRN" },
+      { key: "description", label: "Description", type: "text" },
+      { key: "comments", label: "Comments", type: "text" },
+      { key: "added", label: "Added", type: "date" },
+      { key: "updated", label: "Updated", type: "date" },
+    ],
+    defaultLayout: {
+      columns: ["name", "manufacturer", "modelNumber", "cart", "phi", "pii"],
+      sort: { column: "name", dir: "asc" },
+      filter: { kind: "group", match: "all", items: [] },
+    },
+  },
+  columns: {
+    name: mm.name,
+    manufacturer: mm.manufacturer,
+    modelNumber: mm.modelNumber,
+    cart: yesNo(mm.cart),
+    phi: yesNo(mm.phi),
+    pii: yesNo(mm.pii),
+    standard: mm.standardName,
+    standardValue: mm.standardValue,
+    description: mm.description,
+    comments: mm.comments,
+    added: mm.createdAt,
+    updated: mm.updatedAt,
+  },
+};
+
+export const LISTS: Record<string, ListSource> = { orders, people, "medical-models": medicalModels };
 
 export function listSource(id: string): ListSource | undefined {
   return Object.hasOwn(LISTS, id) ? LISTS[id] : undefined;
@@ -905,6 +981,14 @@ export type ColumnMeta = {
   options?: { value: string; label: string }[];
   /** Example shown in the column's search box. */
   searchHint?: string;
+  /**
+   * Text columns with a short set of repeating values (Status, Unit): the filter
+   * builder offers the values found in the data as a dropdown, like a
+   * ServiceNow choice field, instead of a free-text box.
+   */
+  pick?: boolean;
+  /** Filled in by the server for `pick` columns: the distinct values in the data. */
+  values?: string[];
   /**
    * Patient identifiers and free text that may hold them. Never sent to the AI
    * assistant, and it can't group, filter or show them (docs/features/ai-assistant.md).
@@ -1612,6 +1696,32 @@ function toLayout(meta: ListMeta, row: StoredLayout): Layout {
  * The layout this person sees when they open the list: their own if they've
  * changed it, otherwise the admin-set default, otherwise the list's built-in one.
  */
+/** How many distinct values a `pick` column offers in the filter builder. */
+const PICK_LIMIT = 300;
+
+/**
+ * The list's meta with each `pick` column's distinct values filled in (as
+ * shown on screen, sorted, at most 300), for the filter builder's dropdowns.
+ * Private columns never get values.
+ */
+export async function withPickValues(source: ListSource): Promise<ListMeta> {
+  const db = getDb();
+  const columns = await Promise.all(
+    source.meta.columns.map(async (c) => {
+      if (!c.pick || c.private || c.type !== "text") return c;
+      const expr = source.columns[c.key];
+      const rows = await db
+        .selectDistinct({ v: sql<string>`${expr}` })
+        .from(source.table)
+        .where(sql`nullif(trim(${expr}), '') is not null`)
+        .orderBy(sql`1`)
+        .limit(PICK_LIMIT);
+      return { ...c, values: rows.map((r) => r.v) };
+    }),
+  );
+  return { ...source.meta, columns };
+}
+
 export async function effectiveLayout(meta: ListMeta, userId: number) {
   const rows = await getDb()
     .select()
@@ -1831,7 +1941,7 @@ import {
   listHref,
   type Group,
 } from "@/lib/list-view/types";
-import { effectiveLayout, queryList, savedFiltersFor } from "@/lib/list-view/server";
+import { effectiveLayout, queryList, savedFiltersFor, withPickValues } from "@/lib/list-view/server";
 import { requireUser } from "@/lib/dal";
 import { listSource } from "@/lib/lists/registry";
 import { can } from "@/lib/roles";
@@ -1885,14 +1995,16 @@ export async function ListPage({
   const groupBy = groupParam === undefined ? (layout.groupBy ?? null) : cleanGroupBy(meta, groupParam);
   const page = Math.max(1, Math.floor(Number(params.page) || 1));
 
-  const [result, saved] = await Promise.all([
+  const [result, saved, pickMeta] = await Promise.all([
     queryList(source, { columns: layout.columns, sort, filter, search, page, groupBy, pageSize }),
     savedFiltersFor(meta, user.id),
+    // Status, Unit…: the values in the data, offered as dropdowns in the filter builder.
+    withPickValues(source),
   ]);
 
   return (
     <ListView
-      meta={meta}
+      meta={pickMeta}
       path={source.path}
       columns={layout.columns}
       sort={sort}
@@ -3623,7 +3735,8 @@ function ConditionEditor({
           onChange({
             kind: "condition",
             column: next.key,
-            op: keepOp ? condition.op : OPERATORS[next.type][0].op,
+            // Picking from a list (Status, Unit) starts at "is", like a choice field.
+            op: next.values?.length && next.key !== column.key ? "is" : keepOp ? condition.op : OPERATORS[next.type][0].op,
             value: next.type === column.type && next.type === "text" ? condition.value : "",
           });
         }}
@@ -3659,15 +3772,40 @@ function ConditionEditor({
               </option>
             ))}
           </NativeSelect>
-        ) : (
-          <Input
+        ) : column.values?.length && (condition.op === "is" || condition.op === "isNot") ? (
+          // A text column with repeating values: pick one of the values in the data.
+          <NativeSelect
             aria-label={`Value for ${label}`}
-            type={column.type === "date" ? "date" : "text"}
             value={condition.value ?? ""}
             onChange={(e) => onChange({ ...condition, value: e.target.value })}
-            autoComplete="off"
-            className="bg-background"
-          />
+          >
+            <option value="">Choose…</option>
+            {column.values.map((v) => (
+              <option key={v} value={v}>
+                {v}
+              </option>
+            ))}
+          </NativeSelect>
+        ) : (
+          <>
+            <Input
+              aria-label={`Value for ${label}`}
+              type={column.type === "date" ? "date" : "text"}
+              value={condition.value ?? ""}
+              onChange={(e) => onChange({ ...condition, value: e.target.value })}
+              autoComplete="off"
+              className="bg-background"
+              // "contains", "starts with"…: typing, with the data's values as suggestions.
+              list={column.values?.length ? `values-${column.key}` : undefined}
+            />
+            {column.values?.length ? (
+              <datalist id={`values-${column.key}`}>
+                {column.values.map((v) => (
+                  <option key={v} value={v} />
+                ))}
+              </datalist>
+            ) : null}
+          </>
         )
       ) : (
         <span className="hidden sm:block" />
