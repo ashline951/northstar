@@ -10,14 +10,21 @@ import {
   Columns3,
   Download,
   Menu,
+  ChevronRight,
+  Copy,
+  Filter,
+  Layers,
   Plus,
   RotateCcw,
   Rows3,
   Search,
+  X,
 } from "lucide-react";
 import { cn } from "@/lib/cn";
 import {
+  MAX_GROUPS,
   PER_PAGE_OPTIONS,
+  groupRows,
   type ListQuery,
   type WireColumn,
   type WireRow,
@@ -73,6 +80,13 @@ export default function ListView({
   const [draft, setDraft] = useState<Record<string, string>>(query.search);
   const [hidden, setHidden] = useState<string[]>([]);
   const [menu, setMenu] = useState(false);
+  const [closedGroups, setClosedGroups] = useState<string[]>([]);
+  const [context, setContext] = useState<{
+    x: number;
+    y: number;
+    col: WireColumn;
+    text: string;
+  } | null>(null);
 
   useEffect(() => {
     try {
@@ -147,6 +161,15 @@ export default function ListView({
   }
 
   const visible = columns.filter((c) => !hidden.includes(c.key));
+  const groups = query.groupKey ? groupRows(rows, query.groupKey) : null;
+  const groupedCol = columns.find((c) => c.key === query.groupKey);
+
+  /** The searches in force, as removable chips. */
+  const crumbs = Object.entries(query.search).map(([key, term]) => ({
+    key,
+    term,
+    label: columns.find((c) => c.key === key)?.label ?? key,
+  }));
   const pages = Math.max(1, Math.ceil(total / query.perPage));
   const from = total === 0 ? 0 : (query.page - 1) * query.perPage + 1;
   const to = Math.min(query.page * query.perPage, total);
@@ -200,6 +223,11 @@ export default function ListView({
           open={menu}
           setOpen={setMenu}
           columns={columns}
+          groupKey={query.groupKey}
+          onGroupBy={(key) => {
+            setClosedGroups([]);
+            go({ group: key });
+          }}
           hidden={hidden}
           onToggleColumn={toggleColumn}
           comfortable={comfortable}
@@ -208,18 +236,55 @@ export default function ListView({
           exportHref={exportHref}
         />
 
-        <Pager
-          page={query.page}
-          pages={pages}
-          from={from}
-          to={to}
-          total={total}
-          noun={noun}
-          perPage={query.perPage}
-          onPage={(p) => go({ page: p === 1 ? null : String(p) })}
-          onPerPage={(n) => go({ per: String(n), page: null })}
-        />
+        {!query.groupKey && (
+          <Pager
+              page={query.page}
+            pages={pages}
+            from={from}
+            to={to}
+            total={total}
+            noun={noun}
+            perPage={query.perPage}
+            onPage={(p) => go({ page: p === 1 ? null : String(p) })}
+            onPerPage={(n) => go({ per: String(n), page: null })}
+          />
+        )}
+
+        {query.groupKey && (
+          <span className="text-sm whitespace-nowrap text-[var(--ns-text-secondary)]">
+            {total} {noun} in {groups?.length ?? 0} groups
+          </span>
+        )}
       </div>
+
+      {(crumbs.length > 0 || query.groupKey) && (
+        <div className="flex flex-wrap items-center gap-2 border-b border-[var(--ns-border-subtle)] px-4 py-1.5">
+          <Filter aria-hidden className="size-3.5 text-[var(--ns-text-secondary)]" />
+          {query.groupKey && (
+            <Chip
+              label="Grouped by"
+              value={groupedCol?.label ?? query.groupKey}
+              onRemove={() => go({ group: null })}
+            />
+          )}
+          {crumbs.map((c) => (
+            <Chip
+              key={c.key}
+              label={c.label}
+              value={c.term}
+              onRemove={() => go({ [`q_${c.key}`]: null })}
+            />
+          ))}
+          {crumbs.length > 1 && (
+            <button
+              onClick={() => router.push("?")}
+              className="text-sm text-[var(--ns-nav-primary)] underline-offset-2 hover:underline"
+            >
+              Clear all
+            </button>
+          )}
+        </div>
+      )}
 
       <div aria-live="polite" className="sr-only">
         {filtered
@@ -302,33 +367,73 @@ export default function ListView({
             </tr>
           </thead>
 
-          <tbody>
-            {rows.map((row, i) => (
-              <tr
-                key={row.id}
-                // The whole row is the target, as in ServiceNow. The first cell
-                // is still a real link, so keyboard and middle-click work and
-                // the address is visible on hover.
-                onClick={row.href ? () => router.push(row.href!) : undefined}
-                className={cn(
-                  "border-b border-[var(--ns-border-subtle)]",
-                  i % 2 === 1 && "bg-black/[0.025] dark:bg-white/[0.025]",
-                  row.href &&
-                    "cursor-pointer hover:bg-[var(--ns-nav-primary)]/5"
-                )}
-              >
-                {visible.map((col, ci) => (
-                  <Cell
-                    key={col.key}
-                    col={col}
-                    text={row.cells[col.key] ?? ""}
-                    pad={cellPad}
-                    href={ci === 0 ? row.href : undefined}
-                  />
-                ))}
-              </tr>
-            ))}
-          </tbody>
+          {groups ? (
+            groups.map((g) => {
+              const closed = closedGroups.includes(g.label);
+              return (
+                <tbody key={g.label}>
+                  <tr className="border-b border-[var(--ns-border-subtle)] bg-black/[0.04] dark:bg-white/[0.06]">
+                    <th
+                      colSpan={visible.length}
+                      scope="colgroup"
+                      className="px-3 py-1 text-left"
+                    >
+                      <button
+                        type="button"
+                        aria-expanded={!closed}
+                        onClick={() =>
+                          setClosedGroups(
+                            closed
+                              ? closedGroups.filter((l) => l !== g.label)
+                              : [...closedGroups, g.label]
+                          )
+                        }
+                        className="flex items-center gap-1.5 font-semibold text-[var(--ns-text-primary)]"
+                      >
+                        <ChevronRight
+                          aria-hidden
+                          className={cn(
+                            "size-4 transition-transform",
+                            !closed && "rotate-90"
+                          )}
+                        />
+                        {g.label}
+                        <span className="font-normal text-[var(--ns-text-secondary)]">
+                          ({g.rows.length})
+                        </span>
+                      </button>
+                    </th>
+                  </tr>
+                  {!closed &&
+                    g.rows.map((row, i) => (
+                      <Row
+                        key={row.id}
+                        row={row}
+                        i={i}
+                        visible={visible}
+                        cellPad={cellPad}
+                        router={router}
+                        onContext={setContext}
+                      />
+                    ))}
+                </tbody>
+              );
+            })
+          ) : (
+            <tbody>
+              {rows.map((row, i) => (
+                <Row
+                  key={row.id}
+                  row={row}
+                  i={i}
+                  visible={visible}
+                  cellPad={cellPad}
+                  router={router}
+                  onContext={setContext}
+                />
+              ))}
+            </tbody>
+          )}
         </table>
       </div>
 
@@ -371,6 +476,26 @@ export default function ListView({
         ))}
       </ul>
 
+      {groups && groups.length >= MAX_GROUPS && (
+        <p className="border-b border-[var(--ns-border-subtle)] px-4 py-1.5 text-sm text-[var(--ns-text-secondary)]">
+          Showing the first {MAX_GROUPS} groups. Narrow the list, or group by
+          something with fewer values.
+        </p>
+      )}
+
+      {context && (
+        <RowMenu
+          at={context}
+          onClose={() => setContext(null)}
+          onShowMatching={() =>
+            go({ [`q_${context.col.key}`]: `=${context.text}` })
+          }
+          onFilterOut={() =>
+            go({ [`q_${context.col.key}`]: `!=${context.text}` })
+          }
+        />
+      )}
+
       {rows.length === 0 && (
         <div className="px-4 py-12 text-center">
           <p className="text-[var(--ns-text-primary)]">
@@ -398,6 +523,8 @@ function ListMenu({
   open,
   setOpen,
   columns,
+  groupKey,
+  onGroupBy,
   hidden,
   onToggleColumn,
   comfortable,
@@ -408,6 +535,8 @@ function ListMenu({
   open: boolean;
   setOpen: (v: boolean) => void;
   columns: WireColumn[];
+  groupKey: string;
+  onGroupBy: (key: string | null) => void;
   hidden: string[];
   onToggleColumn: (key: string) => void;
   comfortable: boolean;
@@ -446,6 +575,36 @@ function ListMenu({
             role="menu"
             className="absolute right-0 z-50 mt-1 w-64 overflow-hidden rounded-lg border border-[var(--ns-border-subtle)] bg-[var(--ns-surface-card)] py-1 shadow-lg"
           >
+            <p className="flex items-center gap-2 px-3 py-1.5 text-xs font-semibold tracking-wide text-[var(--ns-text-secondary)] uppercase">
+              <Layers aria-hidden className="size-3.5" />
+              Group by
+            </p>
+            <label className="sr-only" htmlFor="group-by">
+              Group by
+            </label>
+            <select
+              id="group-by"
+              value={groupKey}
+              onChange={(e) => {
+                onGroupBy(e.target.value || null);
+                setOpen(false);
+              }}
+              className="mx-3 mb-1 w-[calc(100%-1.5rem)] rounded-md border border-[var(--ns-border-subtle)] bg-[var(--ns-surface-card)] px-2 py-1 text-sm text-[var(--ns-text-primary)]"
+            >
+              <option value="">Nothing</option>
+              {/* Dates are left out: one group per timestamp is one group per
+                  row. */}
+              {columns
+                .filter((c) => c.type !== "date")
+                .map((c) => (
+                  <option key={c.key} value={c.key}>
+                    {c.label}
+                  </option>
+                ))}
+            </select>
+
+            <div className="my-1 border-t border-[var(--ns-border-subtle)]" />
+
             <p className="flex items-center gap-2 px-3 py-1.5 text-xs font-semibold tracking-wide text-[var(--ns-text-secondary)] uppercase">
               <Columns3 aria-hidden className="size-3.5" />
               Columns
@@ -499,19 +658,190 @@ function ListMenu({
 }
 
 
+/** One breadcrumb: what is filtering the list, and a way to drop it. */
+function Chip({
+  label,
+  value,
+  onRemove,
+}: {
+  label: string;
+  value: string;
+  onRemove: () => void;
+}) {
+  return (
+    <span className="inline-flex items-center gap-1 rounded-full bg-[var(--ns-nav-primary)]/10 py-0.5 pr-1 pl-2.5 text-sm text-[var(--ns-nav-primary)]">
+      <span className="font-medium">{label}</span>
+      <span className="max-w-50 truncate">{value}</span>
+      <button
+        type="button"
+        onClick={onRemove}
+        aria-label={`Remove ${label} ${value}`}
+        className="flex size-4 items-center justify-center rounded-full hover:bg-[var(--ns-nav-primary)]/20"
+      >
+        <X aria-hidden className="size-3" />
+      </button>
+    </span>
+  );
+}
+
+/** A table row. Shared so grouped and ungrouped lists cannot drift apart. */
+function Row({
+  row,
+  i,
+  visible,
+  cellPad,
+  router,
+  onContext,
+}: {
+  row: WireRow;
+  i: number;
+  visible: WireColumn[];
+  cellPad: string;
+  router: ReturnType<typeof useRouter>;
+  onContext: (c: { x: number; y: number; col: WireColumn; text: string }) => void;
+}) {
+  return (
+    <tr
+      // The whole row is the target, as in ServiceNow. The first cell is still
+      // a real link, so keyboard and middle-click work and the address is
+      // visible on hover.
+      onClick={row.href ? () => router.push(row.href!) : undefined}
+      className={cn(
+        "border-b border-[var(--ns-border-subtle)]",
+        i % 2 === 1 && "bg-black/[0.025] dark:bg-white/[0.025]",
+        row.href && "cursor-pointer hover:bg-[var(--ns-nav-primary)]/5"
+      )}
+    >
+      {visible.map((col, ci) => (
+        <Cell
+          key={col.key}
+          col={col}
+          text={row.cells[col.key] ?? ""}
+          pad={cellPad}
+          href={ci === 0 ? row.href : undefined}
+          onContext={(x, y) =>
+            onContext({ x, y, col, text: row.cells[col.key] ?? "" })
+          }
+        />
+      ))}
+    </tr>
+  );
+}
+
+/** Right-click on a value: filter to it, filter it out, or copy it. */
+function RowMenu({
+  at,
+  onClose,
+  onShowMatching,
+  onFilterOut,
+}: {
+  at: { x: number; y: number; col: WireColumn; text: string };
+  onClose: () => void;
+  onShowMatching: () => void;
+  onFilterOut: () => void;
+}) {
+  const item =
+    "flex w-full items-center gap-2 px-3 py-1.5 text-left text-sm text-[var(--ns-text-primary)] hover:bg-black/5 dark:hover:bg-white/5";
+
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => e.key === "Escape" && onClose();
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [onClose]);
+
+  return (
+    <>
+      <button
+        type="button"
+        aria-hidden
+        tabIndex={-1}
+        onClick={onClose}
+        onContextMenu={(e) => {
+          e.preventDefault();
+          onClose();
+        }}
+        className="fixed inset-0 z-40 cursor-default"
+      />
+      <div
+        role="menu"
+        style={{
+          // Kept inside the window: a menu opened near the right edge would
+          // otherwise hang off it.
+          left: Math.min(at.x, (globalThis.innerWidth ?? 1024) - 240),
+          top: at.y,
+        }}
+        className="fixed z-50 w-56 overflow-hidden rounded-lg border border-[var(--ns-border-subtle)] bg-[var(--ns-surface-card)] py-1 shadow-lg"
+      >
+        <p className="truncate px-3 py-1 text-xs text-[var(--ns-text-secondary)]">
+          {at.col.label}: {at.text || "(empty)"}
+        </p>
+        <button
+          type="button"
+          role="menuitem"
+          className={item}
+          onClick={() => {
+            onShowMatching();
+            onClose();
+          }}
+        >
+          <Filter aria-hidden className="size-3.5 shrink-0" />
+          Show matching
+        </button>
+        <button
+          type="button"
+          role="menuitem"
+          className={item}
+          onClick={() => {
+            onFilterOut();
+            onClose();
+          }}
+        >
+          <X aria-hidden className="size-3.5 shrink-0" />
+          Filter out
+        </button>
+        <button
+          type="button"
+          role="menuitem"
+          className={item}
+          onClick={() => {
+            void navigator.clipboard?.writeText(at.text);
+            onClose();
+          }}
+        >
+          <Copy aria-hidden className="size-3.5 shrink-0" />
+          Copy
+        </button>
+      </div>
+    </>
+  );
+}
+
+
 function Cell({
   col,
   text,
   pad,
   href,
+  onContext,
 }: {
   col: WireColumn;
   text: string;
   pad: string;
   href?: string;
+  onContext?: (x: number, y: number) => void;
 }) {
   return (
-    <td className={cn(pad, "align-middle")}>
+    <td
+      className={cn(pad, "align-middle")}
+      onContextMenu={
+        onContext
+          ? (e) => {
+              e.preventDefault();
+              onContext(e.clientX, e.clientY);
+            }
+          : undefined
+      }
+    >
       {col.type === "date" ? (
         <RelativeDate iso={text} />
       ) : href ? (

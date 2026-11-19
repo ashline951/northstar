@@ -379,12 +379,21 @@ function NavRow({ item, pathname, depth, onNavigate, favoriteFor, onStar }: RowP
   );
 }
 
-/** A menu with a submenu. Starts collapsed (standard 9.2); opens while searching.
+/** A menu with a submenu. Collapsed by default (standard 9.2), but **open when
+ *  the current page is inside it** - a group that hides where you are leaves
+ *  the navigator unable to answer "where am I". Opens while searching too.
  *  Slid closed, the group's icon goes straight to its first page. */
 function NavGroup({ item, searching, ...row }: RowProps & { item: NavItem; searching: boolean }) {
   const { pathname, depth, onNavigate } = row;
   const active = isActive(item, pathname);
-  const [openState, setOpen] = useState(false);
+  const [openState, setOpen] = useState(active);
+  // Opens on arriving at a page inside it. Closing it by hand stays closed
+  // until you navigate into it again, because this only runs when `active`
+  // changes - the same value on the server and the first client render, so
+  // there is nothing for hydration to disagree about.
+  useEffect(() => {
+    if (active) setOpen(true);
+  }, [active]);
   const open = searching || openState;
   const Icon = item.icon;
   const id = `nav-${depth}-${item.title.replace(/\W+/g, "-")}`;

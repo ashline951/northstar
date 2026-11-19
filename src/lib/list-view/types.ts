@@ -42,6 +42,8 @@ export type ListQuery = {
   search: Record<string, string>;
   page: number;
   perPage: number;
+  /** Column key to group by, or "" for no grouping. */
+  groupKey: string;
 };
 
 export const PER_PAGE_OPTIONS = [10, 20, 50, 100, 500] as const;
@@ -80,7 +82,16 @@ export function parseQuery<Row>(
   const pageRaw = Number(one("page"));
   const page = Number.isInteger(pageRaw) && pageRaw > 0 ? pageRaw : 1;
 
-  return { sortKey, sortDir, search, page, perPage };
+  const rawGroup = one("group") ?? "";
+  // Grouping by a date would make one group per timestamp, which is one group
+  // per row and no use to anyone.
+  const groupKey = def.columns.some(
+    (c) => c.key === rawGroup && c.type !== "date"
+  )
+    ? rawGroup
+    : "";
+
+  return { sortKey, sortDir, search, page, perPage, groupKey };
 }
 
 /** Rebuilds a URL query string from a list query, omitting defaults. */
@@ -95,6 +106,7 @@ export function toSearchParams<Row>(
   for (const [k, v] of Object.entries(q.search)) if (v) p.set(`q_${k}`, v);
   if (q.perPage !== DEFAULT_PER_PAGE) p.set("per", String(q.perPage));
   if (q.page > 1) p.set("page", String(q.page));
+  if (q.groupKey) p.set("group", q.groupKey);
   return p;
 }
 
@@ -220,6 +232,37 @@ export function wireColumns<Row>(def: ListDef<Row>): WireColumn[] {
     type,
     width,
   }));
+}
+
+export type WireGroup = { label: string; rows: WireRow[] };
+
+/**
+ * Groups already-wired rows by one column's text, keeping the order the rows
+ * arrived in so the chosen sort still holds inside each group.
+ *
+ * The standard caps this at 200 groups: past that it is not a grouped list,
+ * it is the same list with headings in it, and the browser suffers.
+ */
+export const MAX_GROUPS = 200;
+
+export function groupRows(rows: WireRow[], key: string): WireGroup[] {
+  const map = new Map<string, WireRow[]>();
+  for (const row of rows) {
+    const label = row.cells[key]?.trim() || "(empty)";
+    const bucket = map.get(label);
+    if (bucket) bucket.push(row);
+    else if (map.size < MAX_GROUPS) map.set(label, [row]);
+  }
+  // Alphabetical, with the empties last. First-seen order would depend on
+  // whatever the sort happens to be, so the same list would group differently
+  // from one visit to the next.
+  return [...map]
+    .map(([label, rows]) => ({ label, rows }))
+    .sort((a, b) => {
+      if (a.label === "(empty)") return 1;
+      if (b.label === "(empty)") return -1;
+      return a.label.localeCompare(b.label, undefined, { numeric: true });
+    });
 }
 
 export function wireRows<Row extends { id: number }>(

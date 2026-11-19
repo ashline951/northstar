@@ -1,5 +1,7 @@
 import Link from "next/link";
 import { ArrowRight, ArrowLeft } from "lucide-react";
+import type { HistoryRow } from "@/lib/records";
+import RelativeDate from "./list-view/relative-date";
 import {
   type Lifecycle,
   type NorthstarRecord,
@@ -29,11 +31,14 @@ const label = "block text-sm font-medium text-[var(--ns-text-secondary)]";
  */
 export default function RecordForm({
   record,
+  history,
   lifecycle,
   backHref,
   backLabel,
 }: {
   record?: NorthstarRecord;
+  /** Lifecycle moves, oldest first. Empty for a record that never moved. */
+  history?: HistoryRow[];
   /** Create only: the lifecycle the new record starts in. */
   lifecycle?: Lifecycle;
   backHref: string;
@@ -225,6 +230,54 @@ export default function RecordForm({
           <span className="text-sm text-[var(--ns-text-secondary)]">
             Promotion is forward only, and keeps the number&rsquo;s digits.
           </span>
+        </div>
+      )}
+
+      {record && (
+        <div className="mt-8 border-t border-[var(--ns-border-subtle)] pt-5">
+          <h2 className="text-sm font-semibold text-[var(--ns-text-primary)]">
+            History
+          </h2>
+
+          <ol className="mt-3 space-y-2 text-sm">
+            <li className="flex flex-wrap items-baseline gap-x-2">
+              <span className="text-[var(--ns-text-primary)]">
+                Created as {history?.[0]?.from_lifecycle ?? record.lifecycle}
+              </span>
+              {record.created_by && (
+                <span className="text-[var(--ns-text-secondary)]">
+                  by {record.created_by}
+                </span>
+              )}
+              <RelativeDate iso={record.created_at} />
+            </li>
+
+            {/* The whole point of one maturing record: the moves are part of
+                it, not a trail of copies in other tables. */}
+            {(history ?? []).map((h) => (
+              <li
+                key={`${h.changed_at}-${h.to_lifecycle}`}
+                className="flex flex-wrap items-baseline gap-x-2"
+              >
+                <span className="text-[var(--ns-text-primary)]">
+                  {h.from_lifecycle} became {h.to_lifecycle}
+                </span>
+                {h.changed_by && (
+                  <span className="text-[var(--ns-text-secondary)]">
+                    by {h.changed_by}
+                  </span>
+                )}
+                <RelativeDate iso={h.changed_at} />
+              </li>
+            ))}
+
+            <li className="flex flex-wrap items-baseline gap-x-2">
+              <span className="text-[var(--ns-text-secondary)]">
+                Last updated
+              </span>
+              <RelativeDate iso={record.updated_at} />
+            </li>
+          </ol>
         </div>
       )}
     </div>

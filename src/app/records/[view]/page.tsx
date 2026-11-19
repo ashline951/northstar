@@ -69,10 +69,16 @@ export default async function RecordListPage({
   const all = await listByView(view.lifecycle, view.activeOnly);
   const query = parseQuery(RECORDS_LIST, await searchParams);
   const matched = applyQuery(RECORDS_LIST, all, query);
-  const page = matched.slice(
-    (query.page - 1) * query.perPage,
-    query.page * query.perPage
-  );
+  // A grouped list is not paged: counts on the group headers have to be the
+  // real totals, not "how many of this group happen to be on page 2". The cap
+  // keeps one ungrouped-by-accident click from sending 50,000 rows.
+  const GROUPED_ROW_LIMIT = 2000;
+  const page = query.groupKey
+    ? matched.slice(0, GROUPED_ROW_LIMIT)
+    : matched.slice(
+        (query.page - 1) * query.perPage,
+        query.page * query.perPage
+      );
 
   const exportParams = toSearchParams(RECORDS_LIST, query);
   exportParams.delete("page");

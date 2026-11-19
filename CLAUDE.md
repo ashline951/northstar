@@ -292,13 +292,19 @@ operator set, paging (10/20/50/100/500, default 50), compact/comfortable density
 browser, relative dates, empty state with a reset, and CSV export of every matching row (capped at
 10,000, formula-safe, permission re-checked).
 
-Since added: the ☰ list menu (column chooser, row spacing, export, reset), chosen columns
-remembered per list per browser, clickable rows, Create new, and the phone/tablet card layout with
-Sort by. Hiding a column clears any search on it - otherwise the list is filtered by something
-invisible. The pager wraps and drops First/Last below 640px.
+Since added: the ☰ list menu (group by, column chooser, row spacing, export, reset), chosen columns
+remembered per list per browser, clickable rows, Create new, breadcrumbs, group by, right-click
+actions, and the phone/tablet card layout with Sort by. Hiding a column clears any search on it -
+otherwise the list is filtered by something invisible. The pager wraps and drops First/Last below
+640px.
 
-Not built: filter builder (AND/OR/NOT), group by, right-click actions, breadcrumbs, saved views and
-filters, and the ✨ AI assistant.
+**A grouped list is not paged.** Group headers must show real totals, not "how many of this group
+happen to be on page 2", so the page sends every matching row (capped at 2000) and hides the pager.
+Groups are capped at 200 (`MAX_GROUPS`) and sorted alphabetically with empties last - first-seen
+order would depend on the current sort, so the same list would group differently between visits.
+Date columns are not offered: one group per timestamp is one group per row.
+
+Not built: the filter builder (AND/OR/NOT), saved views and filters, and the ✨ AI assistant.
 
 **Ryan's call (2026-11-18): do not rebuild from Appendix A.** It would mean adding shadcn/ui, and he
 asked not to over-complicate it. So the hand-written view stays and will differ from CS Tracker in
@@ -325,6 +331,10 @@ and the phone/tablet drawer.
   `views.ts`, so a new view appears in the nav automatically.
 - Collapse state is in `localStorage` under `northstar:nav` and applied by an inline script in
   `layout.tsx` **before paint**, via the `nav-closed:` variant - no flicker on load.
+- **A group opens when the current page is inside it** (Ryan asked for this). Groups are otherwise
+  collapsed, per standard 9.2. Closing one by hand keeps it closed until you navigate into it again:
+  the effect only runs when the active state changes, and the initial value is the same on the
+  server and the first client render, so there is nothing for hydration to disagree about.
 - **Rows need `min-w-0` on the `ul`, the `li` and the label.** Flex and grid children default to
   `min-width: auto`, so without all three the label runs past the 240px column and pushes the
   chevron out of sight. It looks fine until a label is long.
@@ -377,6 +387,8 @@ Claude admin console, not here.
 | 2026-11-18 | Navigator built to `docs/standards/left-navigator.md`, with navy as the light-mode nav primary | Gold measures 1.77:1 against the standard's 4.5:1 requirement |
 | 2026-11-18 | Navigator brought up to standard v1.3: tabs, favourites, history, drag-to-resize, standard drawer | Ryan asked for Northstar to match the CS Tracker navigator, including the new features |
 | 2026-11-18 | Navigator width: 240px default, people drag it from 200 to 400px | Ryan first asked for wider, then chose resizable with the original default |
+| 2026-11-19 | Nav groups open when the current page is inside them | Ryan asked. A group that hides where you are leaves the navigator unable to answer "where am I" |
+| 2026-11-19 | Grouped lists are not paged, and cap at 2000 rows / 200 groups | Group counts have to be real totals, not per-page counts |
 | 2026-11-18 | Keep the hand-written list view; do not adopt Appendix A or shadcn/ui | Ryan's call: don't over-complicate it. Accepts some drift from CS Tracker |
 | 2026-11-18 | Active Efforts / All Efforts span every lifecycle, above the lifecycle groups | Ryan wants one place to see everything; the Lifecycle column tells them apart |
 | 2026-11-18 | Records open a form at `/record/<number>`, not inside `/records/<view>` | A view key and a record number would have collided in the same segment |

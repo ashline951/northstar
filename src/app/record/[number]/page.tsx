@@ -6,7 +6,7 @@ import ServiceUnavailable from "@/components/ServiceUnavailable";
 import RecordForm from "@/components/record-form";
 import NotOnProject from "@/components/not-on-project";
 import { lookupUser } from "@/lib/users";
-import { findByNumber, displayNumber } from "@/lib/records";
+import { findByNumber, displayNumber, historyFor } from "@/lib/records";
 import { viewByKey } from "@/lib/views";
 
 export const dynamic = "force-dynamic";
@@ -41,6 +41,7 @@ export default async function RecordPage({
   // A record keeps its suffix but its prefix follows its lifecycle, so an old
   // link (IDEA2600007) still finds the row after promotion.
   const canonical = displayNumber(record);
+  const history = await historyFor(record.id);
 
   const from = viewByKey((await searchParams).from ?? "");
   const backHref = from ? `/records/${from.key}` : "/records/efforts-active";
@@ -51,6 +52,7 @@ export default async function RecordPage({
       <RecordForm
         key={canonical}
         record={record}
+        history={history}
         backHref={backHref}
         backLabel={backLabel}
       />
