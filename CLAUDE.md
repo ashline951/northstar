@@ -280,41 +280,66 @@ cannot drift apart. **Views are shortcuts onto one table** (list view standard v
 2026-11-19): the navigator keeps their names ("Active Demands"), but the page title is the
 table's name ("Demands", `RecordView.title`), and the view's filter shows in the **breadcrumb
 trail**, always visible under the toolbar: `All > Active is Yes > Title contains roof`. "All" and
-removing the Active step go to the table's all-rows view (`allViewFor`); column searches are steps
-too (there's no filter builder yet). Page titles in the browser tab / History stay the shortcut's
-name (`view.label`). `northstar_records.is_active` is the flag: `activeOnly: false` returns active
+removing the Active step go to the table's all-rows view (`allViewFor`); filter-builder steps
+follow, and column searches are shown as steps too (ServiceNow does; note that standard s9 still
+says searches are not breadcrumbs - Ryan to settle in the standard). Page titles in the browser
+tab / History stay the shortcut's name (`view.label`). `northstar_records.is_active` is the flag: `activeOnly: false` returns active
 and inactive together, which is what "All Demands" means.
 
-**The list view is PARTLY built, and not from the reference code.**
-`docs/standards/list-view.md` (v1.2) is the LLUH standard, kept in cs-tracker (re-copy it here when
-it changes). What exists in `src/components/list-view/` and `src/lib/list-view/` was hand-written
-from **v1.0's prose**, before v1.1 landed. v1.1 says to **start from Appendix A's reference code and
-not to redesign or simplify it**, precisely because apps built from the description alone came out
-"close but different". So the current build is the thing the standard was revised to prevent, and
-is best treated as a stop-gap.
+**The list view is built to `docs/standards/list-view.md` v1.2 - hand-written, not from Appendix A.**
+Ryan's call (2026-11-18): don't add shadcn/ui, don't over-complicate. So the shared view in
+`src/components/list-view/` reproduces the standard's behaviour, sizes and wording without the
+reference code. It will differ from CS Tracker in small ways. Do not add a second table - extend
+the shared one.
 
-Built: one shared view driven by the registry, sortable columns, per-column search with the full
-operator set, paging (10/20/50/100/500, default 50), compact/comfortable density remembered per
-browser, relative dates, empty state with a reset, and CSV export of every matching row (capped at
-10,000, formula-safe, permission re-checked).
+Where things live: `src/lib/list-view/types.ts` (query, search operators, sort, wire format, CSV),
+`filter.ts` (the filter tree, limits, server-side validation, breadcrumb text, private-column
+redaction), `store.ts` (saved layouts and favourites), `registry.ts` (the columns),
+`src/app/records/list-actions.ts` (server actions, every one re-checking access),
+`src/app/api/lists/[list]/ai/route.ts` (the assistant), `src/app/api/records/[view]/export/route.ts`.
 
-Since added: the ☰ list menu (group by, column chooser, row spacing, export, reset), chosen columns
-remembered per list per browser, clickable rows, Create new, breadcrumbs, group by, right-click
-actions, and the phone/tablet card layout with Sort by. Hiding a column clears any search on it -
-otherwise the list is filtered by something invisible. The pager wraps and drops First/Last below
-640px.
+**Conformance (section 21), checked 2026-11-19 in a real browser at 1440px and 390px:**
 
-**A grouped list is not paged.** Group headers must show real totals, not "how many of this group
-happen to be on page 2", so the page sends every matching row (capped at 2000) and hides the pager.
-Groups are capped at 200 (`MAX_GROUPS`) and sorted alphabetically with empties last - first-seen
-order would depend on the current sort, so the same list would group differently between visits.
-Date columns are not offered: one group per timestamp is one group per row.
+| Item | Result |
+|---|---|
+| One shared view; a list is a registry entry + one-component page | Pass |
+| Toolbar order ☰ ⛛ ☆ ✨ title … pager, actions; 32px buttons; 24px title; no count by the title | Pass, measured |
+| ☰ menu items and order; Set as default (admins, confirmed); Reset | Pass. Group by is an inline select, not a dialog |
+| Compact rows 24px (36 with dates); Comfortable remembered per browser; 16px text; shaded | Pass (36+1 measured; comfortable wraps long text, per s8) |
+| Column search, full operators, Enter runs it, Clear search, "not" keeps empty | Pass |
+| Filter builder AND/OR/NOT, 3 levels, 30 conditions, per-type comparisons, Run filter, server-enforced | Pass |
+| Breadcrumbs: select to cut, per-step remove | Pass |
+| Sort, one arrow; phones get Sort by | Pass |
+| Group by: rows, counts, Open all / Close all / stop, 200 cap | Pass. **Not built:** per-group "Showing n. Show all"; the list caps at 2000 rows total instead |
+| Right-click Show matching / Filter out / Copy per s11 | Pass |
+| Saved filters per person; admin sharing; unique names; confirm on remove | Built; the database path is exercised only by code review here (no DB in the preview). Unique indexes enforce the names |
+| View saved automatically; columns saved; admin default; precedence per s12 | Built; same caveat. Precedence is URL → person → admin default → registry |
+| URL carries filter, sort, group, rows, searches, page | Pass |
+| Pager in toolbar; 10/20/50/100/500, default 50; hidden while grouped | Pass |
+| CSV ≤10,000 rows, formula-safe, permission-checked, BOM + CRLF + all quoted | Pass |
+| Dates with the relative line, refreshed each minute | Pass |
+| AI: analyze, chart, propose filter with Apply; numbers from queries; event stream per 14.6 | Pass, tested against a scripted fake model. **Not built:** markdown rendering (answers show as plain text); line charts draw as bars; voice (14.8, optional) |
+| **Private columns never reach the model** | **Pass, tested the standard's way:** a search and a filter condition on `Assigned to` with a sentinel value; across three requests the sentinel never appeared, the model was told "also has conditions on hidden columns" / "also searches on hidden columns", `count_rows` grouped by it was refused, `list_rows` dropped it, and the server still applied the real filter (matching count was right) |
+| Phones/tablets: cards, Search panel, Sort by; no sideways scrolling | Pass (390px scrollWidth = 390) |
+| Wording per s7 / 14.7 | Followed where built; not every string audited |
+| Accessibility s18 | Caption, aria-sort with sort hints, named fields, "Active filter" nav, live region, confirmations, button-ordered columns: pass. Keyboard-only pass not run |
 
-Not built: the filter builder (AND/OR/NOT), saved views and filters, and the ✨ AI assistant.
-
-**Ryan's call (2026-11-18): do not rebuild from Appendix A.** It would mean adding shadcn/ui, and he
-asked not to over-complicate it. So the hand-written view stays and will differ from CS Tracker in
-places. Do not add a second table - extend the shared one.
+**Design choices worth knowing:**
+- **`Assigned to` is `private: true`.** A named member of staff is a person identifier and section
+  14.4 is absolute. The AI can group by Assignment group instead. Remove the flag only with a
+  reason written here.
+- **Filtering runs in memory on the server, not in SQL.** `listByView` loads the view's rows and
+  `applyQuery` filters, sorts and pages them. Fine at POC size, wrong at 50,000 rows - the
+  filter model is the standard's, so moving it to SQL later is a translation, not a redesign.
+  The AI's `count_rows` uses the same path, so its numbers are the page's numbers.
+- **The AI uses `claude-opus-5-5` at medium effort** (section 14.5 names it), with the provider's
+  refusal fallback on. The Northstar guide assistant stays on Haiku; they are different jobs.
+- **A grouped list is not paged.** Group headers must show real totals, so the page sends every
+  matching row (capped at 2000) and hides the pager. Groups sort alphabetically, empties last.
+- **Saved views are keyed on lower(email)** like every other per-person table here, not a user
+  id. A null email is the default for everyone; a unique index on `(list_id, lower(coalesce(email,'')))`
+  stands in for `unique nulls not distinct`.
+- Hiding a column clears any search on it; a failed column save reverts and says so.
 
 Two rules from that standard are non-negotiable and easy to get wrong: **every AI answer's numbers
 come from a real query, never from the model reading rows**, and **nothing from a column marked
@@ -393,6 +418,9 @@ Claude admin console, not here.
 | 2026-11-18 | Navigator built to `docs/standards/left-navigator.md`, with navy as the light-mode nav primary | Gold measures 1.77:1 against the standard's 4.5:1 requirement |
 | 2026-11-18 | Navigator brought up to standard v1.3: tabs, favourites, history, drag-to-resize, standard drawer | Ryan asked for Northstar to match the CS Tracker navigator, including the new features |
 | 2026-11-18 | Navigator width: 240px default, people drag it from 200 to 400px | Ryan first asked for wider, then chose resizable with the original default |
+| 2026-11-19 | List view completed to standard v1.1 without shadcn/ui; `Assigned to` marked private | Ryan: build to the standards, don't ask. A staff email is a person identifier under 14.4 |
+| 2026-11-19 | List AI on `claude-opus-5-5` at medium effort; guide assistant stays on Haiku | The standard names it; the two assistants do different jobs |
+| 2026-11-19 | List filtering stays in memory on the server for the POC | The filter model matches the standard, so moving to SQL later is a translation |
 | 2026-11-19 | Nav groups open when the current page is inside them | Ryan asked. A group that hides where you are leaves the navigator unable to answer "where am I" |
 | 2026-11-19 | Grouped lists are not paged, and cap at 2000 rows / 200 groups | Group counts have to be real totals, not per-page counts |
 | 2026-11-19 | List title is the table ("Demands"); filters show in an always-visible breadcrumb trail starting with All; views stay as navigator shortcuts | Ryan prefers ServiceNow's pattern; list view standard v1.2 |

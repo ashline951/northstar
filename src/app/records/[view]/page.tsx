@@ -4,7 +4,8 @@ import { auth } from "@/auth";
 import AppShell from "@/components/AppShell";
 import ServiceUnavailable from "@/components/ServiceUnavailable";
 import ListView from "@/components/list-view/list-view";
-import { lookupUser } from "@/lib/users";
+import NotOnProject from "@/components/not-on-project";
+import { lookupUser, ROLE_PROJECT_MANAGER } from "@/lib/users";
 import { displayNumber, listByView } from "@/lib/records";
 import { RECORDS_LIST } from "@/lib/list-view/registry";
 import {
@@ -14,6 +15,8 @@ import {
   wireColumns,
   wireRows,
 } from "@/lib/list-view/types";
+import { effectiveLayout } from "@/app/records/list-actions";
+import { listSavedFilters } from "@/lib/list-view/store";
 import { allViewFor, viewByKey, viewSteps } from "@/lib/views";
 
 export async function generateMetadata({
@@ -44,31 +47,34 @@ export default async function RecordListPage({
 
   const session = await auth();
   const lookup = await lookupUser(session?.user?.email);
-
   if (lookup.status === "unavailable") return <ServiceUnavailable />;
-
   const me = lookup.status === "ok" ? lookup.user : null;
+  if (!me?.has_project_access) return <NotOnProject />;
 
-  if (!me?.has_project_access) {
-    return (
-      <AppShell>
-        <div className="mx-auto max-w-2xl px-6 py-16 text-center">
-          <h1 className="ns-display text-2xl text-[var(--ns-text-primary)]">
-            Not part of this project
-          </h1>
-          <p className="mt-3 text-sm text-[var(--ns-text-secondary)]">
-            Record views are limited to the core team.
-          </p>
-        </div>
-      </AppShell>
-    );
-  }
+  const sp = await searchParams;
 
-  // The view fixes the lifecycle and the active filter; the URL supplies sort,
-  // per-column search and paging, re-validated against the registry.
+  // Section 12: each of filter, sort, group and rows comes from the URL if it
+  // is there, otherwise from the person's saved view, otherwise the admin
+  // default, otherwise the registry. Columns are never in the URL.
+  const layout = await effectiveLayout(me.email);
+  const withLayout: Record<string, string | string[] | undefined> = {
+    ...(layout
+      ? {
+          sort: `${layout.sort.column}.${layout.sort.dir}`,
+          ...(layout.groupBy ? { group: layout.groupBy } : {}),
+          ...(layout.pageSize ? { rows: String(layout.pageSize) } : {}),
+          ...(layout.filter?.items?.length
+            ? { filter: JSON.stringify(layout.filter) }
+            : {}),
+        }
+      : {}),
+    ...sp,
+  };
+
+  const query = parseQuery(RECORDS_LIST, withLayout);
   const all = await listByView(view.lifecycle, view.activeOnly);
-  const query = parseQuery(RECORDS_LIST, await searchParams);
   const matched = applyQuery(RECORDS_LIST, all, query);
+
   // A grouped list is not paged: counts on the group headers have to be the
   // real totals, not "how many of this group happen to be on page 2". The cap
   // keeps one ungrouped-by-accident click from sending 50,000 rows.
@@ -82,13 +88,19 @@ export default async function RecordListPage({
 
   const exportParams = toSearchParams(RECORDS_LIST, query);
   exportParams.delete("page");
-  exportParams.delete("per");
+  exportParams.delete("rows");
+
+  const favorites = await listSavedFilters(RECORDS_LIST.id, me.email);
+  const columns = wireColumns(RECORDS_LIST);
+  const selectedKeys =
+    layout?.columns?.length ? layout.columns : columns.map((c) => c.key);
 
   return (
     <AppShell>
       <ListView
-        listId={RECORDS_LIST.id}
-        columns={wireColumns(RECORDS_LIST)}
+        listId={view.key}
+        columns={columns}
+        selectedKeys={selectedKeys}
         rows={wireRows(
           RECORDS_LIST,
           page,
@@ -97,6 +109,7 @@ export default async function RecordListPage({
         )}
         noun={RECORDS_LIST.noun}
         total={matched.length}
+        grandTotal={all.length}
         query={query}
         title={view.title}
         trail={{
@@ -109,6 +122,9 @@ export default async function RecordListPage({
           view.lifecycle ? `&lifecycle=${view.lifecycle}` : ""
         }`}
         createLabel={`New ${view.lifecycle ?? "Idea"}`}
+        favorites={favorites}
+        isAdmin={me.role === ROLE_PROJECT_MANAGER}
+        myEmail={me.email}
       />
     </AppShell>
   );

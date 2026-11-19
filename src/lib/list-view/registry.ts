@@ -39,6 +39,10 @@ export const RECORDS_LIST: ListDef<NorthstarRecord> = {
     },
     {
       key: "assigned_to",
+      // A named member of staff. Section 14.4: a person identifier never
+      // reaches the AI - it can group by Assignment group instead, which
+      // answers the same questions without naming anyone.
+      private: true,
       label: "Assigned to",
       type: "text",
       width: "13rem",

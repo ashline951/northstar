@@ -230,6 +230,46 @@ export const MIGRATIONS: Migration[] = [
     name: "013_demo_records",
     statements: [DEMO_RECORDS_SQL],
   },
+  {
+    // The list view standard's two tables (section 15). Keyed on lower(email)
+    // like the rest of Northstar, rather than a user id, because that is how
+    // every other per-person table here is keyed.
+    name: "014_list_layouts_and_saved_filters",
+    statements: [
+      `create table if not exists northstar_list_layouts (
+         id         bigserial primary key,
+         list_id    text not null,
+         user_email text,
+         columns    jsonb not null,
+         sort       jsonb not null,
+         filter     jsonb not null,
+         group_by   text,
+         page_size  integer,
+         updated_at timestamptz not null default now(),
+         updated_by text
+       )`,
+      // null user_email is the default for everyone, and "nulls not distinct"
+      // is what stops two of them existing.
+      `create unique index if not exists northstar_list_layouts_one_per_person
+         on northstar_list_layouts (list_id, lower(coalesce(user_email, '')))`,
+      `create table if not exists northstar_saved_filters (
+         id          bigserial primary key,
+         list_id     text not null,
+         name        text not null,
+         filter      jsonb not null,
+         owner_email text not null,
+         shared      boolean not null default false,
+         created_at  timestamptz not null default now()
+       )`,
+      // Names are unique ignoring capitals: per owner, and among shared ones.
+      `create unique index if not exists northstar_saved_filters_own_name
+         on northstar_saved_filters (list_id, lower(owner_email), lower(name))
+         where shared = false`,
+      `create unique index if not exists northstar_saved_filters_shared_name
+         on northstar_saved_filters (list_id, lower(name))
+         where shared = true`,
+    ],
+  },
 ];
 
 export type MigrationState = { name: string; applied_at: string | null };

@@ -1,4 +1,10 @@
 import type { ReactNode } from "react";
+import {
+  matchesFilter,
+  parseFilterParam,
+  isEmptyFilter,
+  type Group,
+} from "./filter";
 
 /**
  * The shared list view - docs/standards/list-view.md.
@@ -44,6 +50,8 @@ export type ListQuery = {
   perPage: number;
   /** Column key to group by, or "" for no grouping. */
   groupKey: string;
+  /** The filter builder's tree. An empty group means no filter. */
+  filter: Group;
 };
 
 export const PER_PAGE_OPTIONS = [10, 20, 50, 100, 500] as const;
@@ -74,7 +82,9 @@ export function parseQuery<Row>(
     if (typeof v === "string" && v.trim()) search[col.key] = v.trim();
   }
 
-  const perRaw = Number(one("per"));
+  // Section 12 calls this `rows`; `per` is still read so links made before
+  // the rename keep working.
+  const perRaw = Number(one("rows") ?? one("per"));
   const perPage = (PER_PAGE_OPTIONS as readonly number[]).includes(perRaw)
     ? perRaw
     : DEFAULT_PER_PAGE;
@@ -91,7 +101,9 @@ export function parseQuery<Row>(
     ? rawGroup
     : "";
 
-  return { sortKey, sortDir, search, page, perPage, groupKey };
+  const filter = parseFilterParam(def, one("filter"));
+
+  return { sortKey, sortDir, search, page, perPage, groupKey, filter };
 }
 
 /** Rebuilds a URL query string from a list query, omitting defaults. */
@@ -104,9 +116,10 @@ export function toSearchParams<Row>(
     p.set("sort", `${q.sortKey}.${q.sortDir}`);
   }
   for (const [k, v] of Object.entries(q.search)) if (v) p.set(`q_${k}`, v);
-  if (q.perPage !== DEFAULT_PER_PAGE) p.set("per", String(q.perPage));
+  if (q.perPage !== DEFAULT_PER_PAGE) p.set("rows", String(q.perPage));
   if (q.page > 1) p.set("page", String(q.page));
   if (q.groupKey) p.set("group", q.groupKey);
+  if (!isEmptyFilter(q.filter)) p.set("filter", JSON.stringify(q.filter));
   return p;
 }
 
@@ -161,12 +174,14 @@ export function applyQuery<Row>(
 ): Row[] {
   const cols = new Map(def.columns.map((c) => [c.key, c]));
 
-  // A row must match EVERY filled search box.
-  const filtered = rows.filter((row) =>
-    Object.entries(q.search).every(([key, term]) => {
-      const col = cols.get(key);
-      return col ? matchesSearch(col.value(row), term) : true;
-    })
+  // A row must match the filter AND every filled search box.
+  const filtered = rows.filter(
+    (row) =>
+      matchesFilter(def, row, q.filter) &&
+      Object.entries(q.search).every(([key, term]) => {
+        const col = cols.get(key);
+        return col ? matchesSearch(col.value(row), term) : true;
+      })
   );
 
   const col = cols.get(q.sortKey);
@@ -176,6 +191,10 @@ export function applyQuery<Row>(
   return [...filtered].sort((a, b) => {
     const av = col.value(a);
     const bv = col.value(b);
+    // Section 8: empty values sort last whichever way the column is sorted.
+    if (!av && !bv) return 0;
+    if (!av) return 1;
+    if (!bv) return -1;
     if (col.type === "date") {
       const at = Date.parse(av) || 0;
       const bt = Date.parse(bv) || 0;
@@ -185,19 +204,29 @@ export function applyQuery<Row>(
   });
 }
 
-export function toCsv<Row>(def: ListDef<Row>, rows: Row[]): string {
+export function toCsv<Row>(
+  def: ListDef<Row>,
+  rows: Row[],
+  columnKeys?: string[]
+): string {
+  // Section 13: every cell quoted, quotes doubled, CRLF line endings, and a
+  // byte-order mark so Excel reads it as UTF-8 rather than guessing.
   const esc = (v: string) => {
     // Titles are free text. A cell opening with = + - or @ is run as a formula
     // by Excel and Sheets, so a record titled =HYPERLINK(...) would execute on
     // whoever opens the export. A leading apostrophe makes it literal text.
     const safe = /^[=+\-@\t\r]/.test(v) ? `'${v}` : v;
-    return /[",\n]/.test(safe) ? `"${safe.replaceAll('"', '""')}"` : safe;
+    return `"${safe.replaceAll('"', '""')}"`;
   };
-  const head = def.columns.map((c) => esc(c.label)).join(",");
-  const body = rows.map((r) =>
-    def.columns.map((c) => esc(c.value(r))).join(",")
-  );
-  return [head, ...body].join("\n");
+  // The person's columns, in their order - or every column if none chosen.
+  const cols = columnKeys?.length
+    ? columnKeys
+        .map((k) => def.columns.find((c) => c.key === k))
+        .filter((c): c is Column<Row> => Boolean(c))
+    : def.columns;
+  const head = cols.map((c) => esc(c.label)).join(",");
+  const body = rows.map((r) => cols.map((c) => esc(c.value(r))).join(","));
+  return "\uFEFF" + [head, ...body].join("\r\n") + "\r\n";
 }
 
 /**
@@ -216,6 +245,8 @@ export type WireColumn = {
   label: string;
   type: ColumnType;
   width?: string;
+  /** Shown in the list, but never sent to the model - section 14.4. */
+  private?: boolean;
 };
 
 export type WireRow = {
@@ -226,11 +257,12 @@ export type WireRow = {
 };
 
 export function wireColumns<Row>(def: ListDef<Row>): WireColumn[] {
-  return def.columns.map(({ key, label, type, width }) => ({
+  return def.columns.map(({ key, label, type, width, private: isPrivate }) => ({
     key,
     label,
     type,
     width,
+    ...(isPrivate ? { private: true } : {}),
   }));
 }
 
