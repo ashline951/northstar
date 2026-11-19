@@ -62,11 +62,10 @@ export default function RecordForm({
         <h1 className="ns-display text-2xl text-[var(--ns-text-primary)]">
           {creating ? `New ${current}` : displayNumber(record)}
         </h1>
+        {/* The number's prefix already says what it is (PRJ, DMND, IDEA), so
+            no lifecycle badge - only Inactive, which the number cannot show. */}
         {record && (
           <>
-            <span className="rounded-full bg-black/5 px-2 py-0.5 text-sm text-[var(--ns-text-secondary)] dark:bg-white/10">
-              {record.lifecycle}
-            </span>
             {!record.is_active && (
               <span className="rounded-full bg-black/5 px-2 py-0.5 text-sm text-[var(--ns-text-secondary)] dark:bg-white/10">
                 Inactive
