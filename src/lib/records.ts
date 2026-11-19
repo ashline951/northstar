@@ -234,6 +234,16 @@ export async function listByView(
   `) as NorthstarRecord[];
 }
 
+/** Every assignment group already in use, for the form's pick list. */
+export async function listGroups(): Promise<string[]> {
+  const rows = (await sql`
+    select distinct assigned_group as g from northstar_records
+    where assigned_group is not null and assigned_group <> ''
+    order by 1
+  `) as { g: string }[];
+  return rows.map((r) => r.g);
+}
+
 export async function setRecordActive(
   id: number,
   active: boolean

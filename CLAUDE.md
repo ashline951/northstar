@@ -268,9 +268,13 @@ is what distinguishes the rows.
 `src/app/records/actions.ts`). It is `/record`, singular and its own segment, because
 `/records/<something>` is already a view key and a number there would have collided. Clicking a row
 navigates; the first cell is still a real link so keyboard, middle-click and hover all work. The
-form edits title, description, assignment and state, promotes forward, and toggles active.
-**Only the current lifecycle's states are offered, and the server re-reads the lifecycle before
-accepting a state** - the form is not trusted. Create new is on every list and carries that view's
+form opens **read-only**; Edit (or `?edit=1`) turns the same layout into inputs, nothing moves,
+Save returns to read-only and Cancel discards. Promote and Mark inactive are decisions, not
+edits, so they sit outside the form and only in view mode. **Assigned to is a picker over the
+active roster** (stored as the email; an unknown assignee on a seeded record is kept as an option
+rather than silently reassigned); **Assignment group is a datalist** of groups in use, so a new one
+can still be typed. **Only the current lifecycle's states are offered, and the server re-reads
+the lifecycle before accepting a state** - the form is not trusted. Create new is on every list and carries that view's
 lifecycle; the Efforts views start an Idea. Every action re-checks `has_project_access`.
 
 **List views are a registry, not routes.** `src/lib/views.ts` defines each view as a named filter
@@ -426,6 +430,7 @@ Claude admin console, not here.
 | 2026-11-19 | List view completed to standard v1.1 without shadcn/ui; `Assigned to` marked private | Ryan: build to the standards, don't ask. A staff email is a person identifier under 14.4 |
 | 2026-11-19 | List AI on `claude-opus-5-5` at medium effort; guide assistant stays on Haiku | The standard names it; the two assistants do different jobs |
 | 2026-11-19 | List filtering stays in memory on the server for the POC | The filter model matches the standard, so moving to SQL later is a translation |
+| 2026-11-19 | Record form opens read-only with an Edit mode; person picker and group datalist | Ryan asked for a form that reads like a form, not a wall of inputs; one layout for both modes so nothing moves |
 | 2026-11-19 | Nav groups open when the current page is inside them | Ryan asked. A group that hides where you are leaves the navigator unable to answer "where am I" |
 | 2026-11-19 | Grouped lists are not paged, and cap at 2000 rows / 200 groups | Group counts have to be real totals, not per-page counts |
 | 2026-11-19 | List title is the table ("Demands"); filters show in an always-visible breadcrumb trail starting with All; views stay as navigator shortcuts | Ryan prefers ServiceNow's pattern; list view standard v1.2 |

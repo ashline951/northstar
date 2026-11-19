@@ -4,8 +4,8 @@ import AppShell from "@/components/AppShell";
 import ServiceUnavailable from "@/components/ServiceUnavailable";
 import RecordForm from "@/components/record-form";
 import NotOnProject from "@/components/not-on-project";
-import { lookupUser } from "@/lib/users";
-import { LIFECYCLES, type Lifecycle } from "@/lib/records";
+import { listUsers, lookupUser } from "@/lib/users";
+import { LIFECYCLES, listGroups, type Lifecycle } from "@/lib/records";
 import { viewByKey } from "@/lib/views";
 
 export const dynamic = "force-dynamic";
@@ -34,13 +34,20 @@ export default async function NewRecordPage({
     : "Idea";
 
   const from = viewByKey(fromKey ?? "");
+  const [people, groups] = await Promise.all([listUsers(), listGroups()]);
   const backHref = from ? `/records/${from.key}` : "/records/efforts-active";
-  const backLabel = from ? from.title : "Active Efforts";
+  const backLabel = from ? from.label : "Active Efforts";
 
   return (
     <AppShell>
       <RecordForm
         lifecycle={lifecycle}
+        editing
+        people={people
+          .filter((u) => u.is_active)
+          .map((u) => ({ email: u.email, name: u.display_name ?? u.email }))}
+        groups={groups}
+        from={from?.key}
         backHref={backHref}
         backLabel={backLabel}
       />

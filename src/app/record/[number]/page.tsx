@@ -5,8 +5,8 @@ import AppShell from "@/components/AppShell";
 import ServiceUnavailable from "@/components/ServiceUnavailable";
 import RecordForm from "@/components/record-form";
 import NotOnProject from "@/components/not-on-project";
-import { lookupUser } from "@/lib/users";
-import { findByNumber, displayNumber, historyFor } from "@/lib/records";
+import { listUsers, lookupUser } from "@/lib/users";
+import { findByNumber, displayNumber, historyFor, listGroups } from "@/lib/records";
 import { viewByKey } from "@/lib/views";
 
 export const dynamic = "force-dynamic";
@@ -26,7 +26,7 @@ export default async function RecordPage({
   searchParams,
 }: {
   params: Promise<{ number: string }>;
-  searchParams: Promise<{ from?: string }>;
+  searchParams: Promise<{ from?: string; edit?: string }>;
 }) {
   const session = await auth();
   const lookup = await lookupUser(session?.user?.email);
@@ -43,9 +43,15 @@ export default async function RecordPage({
   const canonical = displayNumber(record);
   const history = await historyFor(record.id);
 
-  const from = viewByKey((await searchParams).from ?? "");
+  const sp = await searchParams;
+  const from = viewByKey(sp.from ?? "");
   const backHref = from ? `/records/${from.key}` : "/records/efforts-active";
-  const backLabel = from ? from.title : "Active Efforts";
+  const backLabel = from ? from.label : "Active Efforts";
+
+  // Opens read-only; ?edit=1 opens straight into editing, so a link can, and
+  // Back from the editor lands on the record rather than the list.
+  const editing = sp.edit === "1";
+  const [people, groups] = await Promise.all([listUsers(), listGroups()]);
 
   return (
     <AppShell>
@@ -53,6 +59,12 @@ export default async function RecordPage({
         key={canonical}
         record={record}
         history={history}
+        editing={editing}
+        people={people
+          .filter((u) => u.is_active)
+          .map((u) => ({ email: u.email, name: u.display_name ?? u.email }))}
+        groups={groups}
+        from={from?.key}
         backHref={backHref}
         backLabel={backLabel}
       />

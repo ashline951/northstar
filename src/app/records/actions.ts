@@ -63,7 +63,8 @@ export async function createRecordAction(formData: FormData) {
 
   revalidateRecord(displayNumber(record));
   // Straight into the new record, which is what people expect after Create.
-  redirect(`/record/${displayNumber(record)}`);
+  const from = String(formData.get("from") ?? "");
+  redirect(`/record/${displayNumber(record)}${from ? `?from=${encodeURIComponent(from)}` : ""}`);
 }
 
 export async function saveRecordAction(formData: FormData) {
@@ -94,6 +95,10 @@ export async function saveRecordAction(formData: FormData) {
   }
 
   revalidateRecord(number);
+
+  // Back to the record read-only, where you can see what you just saved.
+  const from = String(formData.get("from") ?? "");
+  redirect(`/record/${number}${from ? `?from=${encodeURIComponent(from)}` : ""}`);
 }
 
 export async function advanceLifecycleAction(formData: FormData) {
