@@ -6,7 +6,7 @@ import ServiceUnavailable from "@/components/ServiceUnavailable";
 import ListView from "@/components/list-view/list-view";
 import NotOnProject from "@/components/not-on-project";
 import { lookupUser, ROLE_PROJECT_MANAGER } from "@/lib/users";
-import { displayNumber, listByView } from "@/lib/records";
+import { STATES, displayNumber, listByView } from "@/lib/records";
 import { RECORDS_LIST } from "@/lib/list-view/registry";
 import {
   applyQuery,
@@ -91,7 +91,10 @@ export default async function RecordListPage({
   exportParams.delete("rows");
 
   const favorites = await listSavedFilters(RECORDS_LIST.id, me.email);
-  const columns = wireColumns(RECORDS_LIST);
+  // On one lifecycle's list, State offers only that lifecycle's states.
+  const columns = wireColumns(RECORDS_LIST).map((c) =>
+    c.key === "state" && view.lifecycle ? { ...c, options: [...STATES[view.lifecycle]] } : c
+  );
   const selectedKeys =
     layout?.columns?.length ? layout.columns : columns.map((c) => c.key);
 

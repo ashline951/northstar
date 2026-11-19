@@ -1,5 +1,9 @@
 import type { NorthstarRecord } from "../records";
-import { displayNumber } from "../records";
+import { LIFECYCLES, STATES, displayNumber } from "../records";
+
+/** Every state of every lifecycle, in lifecycle order, once each. A page for one
+ *  lifecycle narrows this to that lifecycle's states (records page). */
+const ALL_STATES = [...new Set(LIFECYCLES.flatMap((l) => STATES[l]))];
 import type { ListDef } from "./types";
 
 /**
@@ -28,6 +32,7 @@ export const RECORDS_LIST: ListDef<NorthstarRecord> = {
       label: "Lifecycle",
       type: "choice",
       width: "7rem",
+      options: LIFECYCLES,
       value: (r) => r.lifecycle,
     },
     {
@@ -35,6 +40,7 @@ export const RECORDS_LIST: ListDef<NorthstarRecord> = {
       label: "State",
       type: "choice",
       width: "9rem",
+      options: ALL_STATES,
       value: (r) => r.state,
     },
     {
@@ -60,6 +66,7 @@ export const RECORDS_LIST: ListDef<NorthstarRecord> = {
       label: "Active",
       type: "choice",
       width: "6rem",
+      options: ["Yes", "No"],
       value: (r) => (r.is_active ? "Yes" : "No"),
     },
     {
