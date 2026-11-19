@@ -276,11 +276,17 @@ lifecycle; the Efforts views start an Idea. Every action re-checks `has_project_
 **List views are a registry, not routes.** `src/lib/views.ts` defines each view as a named filter
 (lifecycle + `activeOnly`); `src/components/nav/nav-items.ts` builds the navigation from it and
 `/records/[view]` resolves the key and runs `listByView`. Adding a view is one entry - the nav, the heading and the query
-cannot drift apart. `northstar_records.is_active` is the flag: `activeOnly: false` returns active
+cannot drift apart. **Views are shortcuts onto one table** (list view standard v1.2, 11a; Ryan,
+2026-11-19): the navigator keeps their names ("Active Demands"), but the page title is the
+table's name ("Demands", `RecordView.title`), and the view's filter shows in the **breadcrumb
+trail**, always visible under the toolbar: `All > Active is Yes > Title contains roof`. "All" and
+removing the Active step go to the table's all-rows view (`allViewFor`); column searches are steps
+too (there's no filter builder yet). Page titles in the browser tab / History stay the shortcut's
+name (`view.label`). `northstar_records.is_active` is the flag: `activeOnly: false` returns active
 and inactive together, which is what "All Demands" means.
 
 **The list view is PARTLY built, and not from the reference code.**
-`docs/standards/list-view.md` (v1.1) is the LLUH standard, kept in cs-tracker (re-copy it here when
+`docs/standards/list-view.md` (v1.2) is the LLUH standard, kept in cs-tracker (re-copy it here when
 it changes). What exists in `src/components/list-view/` and `src/lib/list-view/` was hand-written
 from **v1.0's prose**, before v1.1 landed. v1.1 says to **start from Appendix A's reference code and
 not to redesign or simplify it**, precisely because apps built from the description alone came out
@@ -389,6 +395,7 @@ Claude admin console, not here.
 | 2026-11-18 | Navigator width: 240px default, people drag it from 200 to 400px | Ryan first asked for wider, then chose resizable with the original default |
 | 2026-11-19 | Nav groups open when the current page is inside them | Ryan asked. A group that hides where you are leaves the navigator unable to answer "where am I" |
 | 2026-11-19 | Grouped lists are not paged, and cap at 2000 rows / 200 groups | Group counts have to be real totals, not per-page counts |
+| 2026-11-19 | List title is the table ("Demands"); filters show in an always-visible breadcrumb trail starting with All; views stay as navigator shortcuts | Ryan prefers ServiceNow's pattern; list view standard v1.2 |
 | 2026-11-18 | Keep the hand-written list view; do not adopt Appendix A or shadcn/ui | Ryan's call: don't over-complicate it. Accepts some drift from CS Tracker |
 | 2026-11-18 | Active Efforts / All Efforts span every lifecycle, above the lifecycle groups | Ryan wants one place to see everything; the Lifecycle column tells them apart |
 | 2026-11-18 | Records open a form at `/record/<number>`, not inside `/records/<view>` | A view key and a record number would have collided in the same segment |
