@@ -290,7 +290,7 @@ says searches are not breadcrumbs - Ryan to settle in the standard). Page titles
 tab / History stay the shortcut's name (`view.label`). `northstar_records.is_active` is the flag: `activeOnly: false` returns active
 and inactive together, which is what "All Demands" means.
 
-**The list view is built to `docs/standards/list-view.md` v1.2 - hand-written, not from Appendix A.**
+**The list view is built to `docs/standards/list-view.md` v1.3 - hand-written, not from Appendix A.**
 Ryan's call (2026-11-18): don't add shadcn/ui, don't over-complicate. So the shared view in
 `src/components/list-view/` reproduces the standard's behaviour, sizes and wording without the
 reference code. It will differ from CS Tracker in small ways. Do not add a second table - extend
