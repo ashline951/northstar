@@ -326,7 +326,22 @@ function ConditionEditor({
         ))}
       </select>
 
-      {needsValue(condition.comparison) && (
+      {needsValue(condition.comparison) && col.type === "choice" && col.options?.length ? (
+        // Choice columns pick from their values, like a ServiceNow choice field.
+        <select
+          aria-label={`Value for ${label} ${COMPARISON_LABEL[condition.comparison]}`}
+          value={condition.value}
+          onChange={(e) => onChange({ ...condition, value: e.target.value })}
+          className={cn(field, "min-w-48")}
+        >
+          <option value="">Choose…</option>
+          {col.options.map((o) => (
+            <option key={o} value={o}>
+              {o}
+            </option>
+          ))}
+        </select>
+      ) : needsValue(condition.comparison) && (
         <input
           aria-label={`Value for ${label} ${COMPARISON_LABEL[condition.comparison]}`}
           type={col.type === "date" ? "date" : "text"}

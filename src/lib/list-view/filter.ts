@@ -136,6 +136,13 @@ export function parseFilter<Row>(def: ListDef<Row>, raw: unknown): Group {
     const value = String(c.value ?? "").trim().slice(0, MAX_VALUE);
     // Section 10: conditions with an empty value are skipped.
     if (needsValue(comparison) && !value) return null;
+    // Section 10: a choice value must be one of the column's options.
+    if (
+      needsValue(comparison) &&
+      col.options &&
+      !col.options.some((o) => o.toLowerCase() === value.toLowerCase())
+    )
+      return null;
 
     budget -= 1;
     return { kind: "condition", column: col.key, comparison, value };

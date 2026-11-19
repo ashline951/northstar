@@ -334,7 +334,12 @@ redaction), `store.ts` (saved layouts and favourites), `registry.ts` (the column
   The AI's `count_rows` uses the same path, so its numbers are the page's numbers.
 - **The AI uses `claude-opus-5-5` at medium effort** (section 14.5 names it), with the provider's
   refusal fallback on. The Northstar guide assistant stays on Haiku; they are different jobs.
-- **A grouped list is not paged.** Group headers must show real totals, so the page sends every
+- **Choice columns list their values.** `options` on a registry column (Lifecycle, State, Active)
+turns the filter builder's value into a dropdown, and `parseFilter` drops a choice value that isn't
+one of them. On one lifecycle's list, the records page narrows State to that lifecycle's states.
+A new choice column needs its `options`, or the filter falls back to a free-text box.
+
+**A grouped list is not paged.** Group headers must show real totals, so the page sends every
   matching row (capped at 2000) and hides the pager. Groups sort alphabetically, empties last.
 - **Saved views are keyed on lower(email)** like every other per-person table here, not a user
   id. A null email is the default for everyone; a unique index on `(list_id, lower(coalesce(email,'')))`
@@ -424,6 +429,7 @@ Claude admin console, not here.
 | 2026-11-19 | Nav groups open when the current page is inside them | Ryan asked. A group that hides where you are leaves the navigator unable to answer "where am I" |
 | 2026-11-19 | Grouped lists are not paged, and cap at 2000 rows / 200 groups | Group counts have to be real totals, not per-page counts |
 | 2026-11-19 | List title is the table ("Demands"); filters show in an always-visible breadcrumb trail starting with All; views stay as navigator shortcuts | Ryan prefers ServiceNow's pattern; list view standard v1.2 |
+| 2026-11-19 | Choice columns (Lifecycle, State, Active) carry their `options`; the filter builder offers them as a dropdown, and the server rejects other values | Ryan expected to pick a State, not type one; standard section 10 |
 | 2026-11-18 | Keep the hand-written list view; do not adopt Appendix A or shadcn/ui | Ryan's call: don't over-complicate it. Accepts some drift from CS Tracker |
 | 2026-11-18 | Active Efforts / All Efforts span every lifecycle, above the lifecycle groups | Ryan wants one place to see everything; the Lifecycle column tells them apart |
 | 2026-11-18 | Records open a form at `/record/<number>`, not inside `/records/<view>` | A view key and a record number would have collided in the same segment |

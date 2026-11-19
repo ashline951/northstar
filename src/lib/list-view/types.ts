@@ -26,6 +26,9 @@ export type Column<Row> = {
   value: (row: Row) => string;
   /** Optional custom rendering; falls back to value(). */
   render?: (row: Row) => ReactNode;
+  /** Choice columns: the values people pick from in the filter builder (the
+   *  words people see). Without them the filter would be a free-text box. */
+  options?: readonly string[];
   /** Columns holding identifiers that must never reach the AI assistant.
    *  Reserved now so the rule exists before there is anything to protect. */
   private?: boolean;
@@ -245,6 +248,8 @@ export type WireColumn = {
   label: string;
   type: ColumnType;
   width?: string;
+  /** Choice columns: the values offered in the filter builder. */
+  options?: readonly string[];
   /** Shown in the list, but never sent to the model - section 14.4. */
   private?: boolean;
 };
@@ -257,11 +262,12 @@ export type WireRow = {
 };
 
 export function wireColumns<Row>(def: ListDef<Row>): WireColumn[] {
-  return def.columns.map(({ key, label, type, width, private: isPrivate }) => ({
+  return def.columns.map(({ key, label, type, width, options, private: isPrivate }) => ({
     key,
     label,
     type,
     width,
+    ...(options ? { options: [...options] } : {}),
     ...(isPrivate ? { private: true } : {}),
   }));
 }
