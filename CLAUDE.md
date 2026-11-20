@@ -106,6 +106,7 @@ Record base URL, auth method, and env var **names** below. Never record secret v
 | `AUTH_MICROSOFT_ENTRA_ID_SECRET` | Entra client secret | `.env.local` + Vercel | **Secret.** Rotate at POC end |
 
 See `.env.example`. Entra registration request for the Identity team: `docs/northstar-entra-setup.md`.
+Instructions for the Claude administrator to add the MCP connector: `docs/northstar-claude-connector.md`.
 
 Add with `vercel env add <NAME> <environment>`.
 
